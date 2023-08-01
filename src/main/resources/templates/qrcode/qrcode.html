@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout/login}">
+<body>
+</body>
+<script>
+
+    var agent = navigator.userAgent.toLowerCase();
+
+    var url;
+    if ( agent.indexOf('android') > -1) {
+        location.href="[[${androidLink}]]";
+        /*setTimeout( function() {
+            location.href= 'https://play.google.com/store/apps/details?id=com.digitalangkor.angkorchats';
+        }, 2000)*/
+    } else if ( agent.indexOf("iphone") > -1||agent.indexOf("ipad") > -1||agent.indexOf("ipod") > -1 ) {
+        location.href = "[[${iosLink}]]";
+        /*setTimeout( function() {
+            location.href= "https://apps.apple.com/kr/app/angkorchat/id6449693743";
+        }, 2000)*/
+    } else {
+
+    }
+
+</script>
+</html>

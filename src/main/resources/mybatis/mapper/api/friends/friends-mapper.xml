@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.friends.FriendsMapper">
+
+    <select id="getFriends" parameterType="Hashmap" resultType="Hashmap">
+        /* FriendsMapper.getFriends */
+        SELECT
+            angkorid AS angkorId,
+            add_auto AS addAuto,
+            in_allow_others AS inAllowOthers,
+            in_recommend_friends AS inRecommendFriends,
+            in_refresh AS inRefresh,
+            DATE_FORMAT(update_dt, '%Y-%m-%d') AS updateDt
+        FROM ank_sys_friends
+        WHERE angkorid = #{angkorId}
+    </select>
+
+    <update id="updateFriends" parameterType="HashMap">
+        /* FriendsMapper.updateFriends */
+        UPDATE ank_sys_friends
+        SET
+            add_auto = #{isAddAuto},
+            in_allow_others = #{isInAllowOthers},
+            in_recommend_friends = #{isInRecommendFriends},
+            update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+</mapper>
+

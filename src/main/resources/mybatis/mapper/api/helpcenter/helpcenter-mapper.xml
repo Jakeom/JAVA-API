@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.helpcenter.HelpCenterMapper">
+
+	<select id="checkNoticeExpectDt" parameterType="Hashmap" resultType="Hashmap">
+		/* UserMapper.checkNoticeExpectDt */
+		select
+		id
+		from ank_sys_notice
+		where expect_dt is not null
+		and status = 'S' and status != 'C'
+		<if test="queryCondition != null and queryCondition != ''">
+			and ${queryCondition}
+		</if>
+	</select>
+
+	<update id="updateNoticeToPublish" parameterType="HashMap">
+		/* HelpCenterMapper.updateNoticeToPublish */
+		update ank_sys_notice set
+			  status = 'P', mod_dt = now(), expect_dt = null
+		where id in
+		<foreach collection="list" item="item"  open="(" close=")" separator=",">
+			#{item.id}
+		</foreach>
+	</update>
+
+	<select id="getNoticeCnt" parameterType="HashMap" resultType="Integer">
+			/* HelpCenterMapper.getNoticeCnt */
+		select
+			   count(id)
+		  from ank_sys_notice
+		 where status = 'P' /* published */
+		<if test='language == "en"'>
+			and `language` = 'English'
+		</if>
+		<if test='language == "khr"'>
+			and `language` = 'Khmer'
+		</if>
+	</select>
+
+	<select id="getNoticeList" parameterType="map" resultType="HashMap">
+		/* HelpCenterMapper.getNoticeList */
+		select
+		       ROW_NUMBER() OVER (ORDER BY id ASC) AS seq
+			 , title
+			 , content
+		 from ank_sys_notice
+		where status = 'P' /* published */
+		<if test='params.language == "en"'>
+			and `language` = 'English'
+		</if>
+		<if test='params.language == "khr"'>
+			and `language` = 'Khmer'
+		</if>
+        order by id asc
+		limit #{paginginfo.pagingSize}
+		offset #{paginginfo.offset}
+	</select>
+
+	<select id="checkFaqExpectDt" parameterType="Hashmap" resultType="Hashmap">
+		/* UserMapper.checkFaqExpectDt */
+		select
+				id
+		  from ank_sys_faq
+		 where expect_dt is not null
+		   and status = 'S' and status != 'C'
+		<if test="queryCondition != null and queryCondition != ''">
+			and ${queryCondition}
+		</if>
+	</select>
+
+	<update id="updateFaqToPublish" parameterType="HashMap">
+		/* HelpCenterMapper.updateFaqToPublish */
+		update ank_sys_faq set
+			  status = 'P', mod_dt = now(), expect_dt = null
+		where id in
+		<foreach collection="list" item="item"  open="(" close=")" separator=",">
+			#{item.id}
+		</foreach>
+	</update>
+
+	<select id="getFaqFirstCategoryList" parameterType="HashMap" resultType="HashMap">
+		/* HelpCenterMapper.getFaqFirstCategoryList */
+		select
+			   ank_group_code_child.ord as seq
+			<if test='language == "en"'>
+				, ank_group_code_child.child_code_name_en as name
+			</if>
+			<if test='language == "khr"'>
+				, ank_group_code_child.child_code_name_khmr as name
+			</if>
+		  from ank_group_code
+	 left join ank_group_code_child on ank_group_code.group_code = ank_group_code_child.group_code
+		 where ank_group_code.group_code = 'G005'
+		order by ord asc
+	</select>
+
+	<select id="getFaqSecondCategoryList" parameterType="HashMap" resultType="HashMap">
+		/* HelpCenterMapper.getFaqSecondCategoryList */
+		select
+		ank_group_code_child.ord as seq
+		<if test='language == "en"'>
+			, ank_group_code_child.child_code_name_en as name
+		</if>
+		<if test='language == "khr"'>
+			, ank_group_code_child.child_code_name_khmr as name
+		</if>
+		from ank_group_code
+		left join ank_group_code_child on ank_group_code.group_code = ank_group_code_child.group_code
+		where ank_group_code.group_code = 'G006'
+		order by ord asc
+	</select>
+
+	<select id="getFaqCnt" parameterType="HashMap" resultType="Integer">
+		/* HelpCenterMapper.getFaqCnt */
+		select
+		       count(id)
+		 from ank_sys_faq
+		where status = 'P' /* published */
+		<if test="fCategory != null and fCategory != ''">
+			and category_1 = (select child_code from ank_group_code_child
+							  left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+							  where ank_group_code_child.group_code = 'G005'
+							  and ank_group_code_child.ord = #{fCategory})
+		</if>
+		<if test="sCategory != null and sCategory != ''">
+			and category_2 = (select child_code from ank_group_code_child
+							  left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+							  where ank_group_code_child.group_code = 'G006'
+							  and ank_group_code_child.ord = #{sCategory})
+		</if>
+		<if test="keyword != null and keyword != ''">
+			and title like concat('%', #{keyword}, '%')
+		</if>
+		<if test='language == "en"'>
+			and `language` = 'D001'
+		</if>
+		<if test='language == "khr"'>
+			and `language` = 'D002'
+		</if>
+	</select>
+
+	<select id="getFaqList" parameterType="map" resultType="HashMap">
+			/* HelpCenterMapper.getFaqList */
+			select
+			       id as seq
+			<if test='params.language == "en"'>
+				,  (select child_code_name_en from ank_group_code_child
+				left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+				where ank_group_code_child.group_code = 'G005'
+				and ank_group_code_child.child_code = category_1) as fCategory
+				, (select child_code_name_en from ank_group_code_child
+				left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+				where ank_group_code_child.group_code = 'G006'
+				and ank_group_code_child.child_code = category_2) as sCategory
+			</if>
+			<if test='params.language == "khr"'>
+				, (select child_code_name_khmr from ank_group_code_child
+				left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+				where ank_group_code_child.group_code = 'G005'
+				and ank_group_code_child.child_code = category_1) as fCategory
+				, (select child_code_name_khmr from ank_group_code_child
+				left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+				where ank_group_code_child.group_code = 'G006'
+				and ank_group_code_child.child_code = category_2) as sCategory
+			</if>
+				 , title
+			 from ank_sys_faq
+			where status = 'P' /* published */
+			<if test="params.fCategory != null and params.fCategory != ''">
+				and category_1 = (select child_code from ank_group_code_child
+				left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+				where ank_group_code_child.group_code = 'G005'
+				and ank_group_code_child.ord = #{params.fCategory})
+			</if>
+			<if test="params.sCategory != null and params.sCategory != ''">
+				and category_2 = (select child_code from ank_group_code_child
+				left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+				where ank_group_code_child.group_code = 'G006'
+				and ank_group_code_child.ord = #{params.sCategory})
+			</if>
+			<if test="params.keyword != null and params.keyword != ''">
+				and title like concat('%', #{params.keyword}, '%')
+			</if>
+			<if test='params.language == "en"'>
+				and `language` = 'D001'
+			</if>
+			<if test='params.language == "khr"'>
+				and `language` = 'D002'
+			</if>
+		order by id asc
+		limit #{paginginfo.pagingSize}
+		offset #{paginginfo.offset}
+	</select>
+
+	<select id="getFaqDetail" parameterType="HashMap" resultType="HashMap">
+		/* HelpCenterMapper.getFaqDetail */
+		select
+		<if test='language == "en"'>
+			    (select child_code_name_en from ank_group_code_child
+				left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+				where ank_group_code_child.group_code = 'G005'
+				and ank_group_code_child.child_code = category_1) as fCategory
+			 , (select child_code_name_en from ank_group_code_child
+				left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+				where ank_group_code_child.group_code = 'G006'
+				and ank_group_code_child.child_code = category_2) as sCategory
+		</if>
+		<if test='language == "khr"'>
+			(select child_code_name_khmr from ank_group_code_child
+			left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+			where ank_group_code_child.group_code = 'G005'
+			and ank_group_code_child.child_code = category_1) as fCategory
+			, (select child_code_name_khmr from ank_group_code_child
+			left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+			where ank_group_code_child.group_code = 'G006'
+			and ank_group_code_child.child_code = category_2) as sCategory
+		</if>
+			 , title
+			 , content
+		from ank_sys_faq
+		where id = #{seq}
+		order by id asc
+	</select>
+
+	<insert id="setQuestion" parameterType="HashMap">
+		/* HelpCenterMapper.setQuestion */
+		INSERT INTO ank_sys_qna (
+				   uid
+				 , category
+				 , title
+				 , content
+				 , status
+			<if test="email != null and email != ''">
+				 , email
+			</if>
+				 , reg_dt
+		) VALUES (
+				   #{angkorId}
+				 , (select child_code from ank_group_code_child
+					left join ank_group_code on ank_group_code.group_code = ank_group_code_child.group_code
+					where ank_group_code_child.group_code = 'G007'
+					and ank_group_code_child.ord = #{category})
+				 , #{title}
+				 , #{content}
+				 , 0 /** 0: unread */
+			<if test="email != null and email != ''">
+				 , #{email}
+			</if>
+				 , now()
+				 )
+		<selectKey keyProperty="inquiryId" resultType="integer" order="AFTER">
+			select inquiryId from ank_sys_qna where uid = #{angkorId} order by reg_dt desc limit 0,1
+		</selectKey>
+	</insert>
+
+	<insert id="insertQnaFile" parameterType="HashMap">
+		/* HelpCenterMapper.insertQnaFile */
+		INSERT INTO ank_sys_qna_file (
+				   inquiryId
+				 , fileName
+				 , `path`
+				 , `size`
+				 , thumb
+				 , reg_dt
+		) VALUES (
+				   #{inquiryId}
+				 , #{fileName}
+				 , #{path}
+				 , #{size}
+				 , #{thumb}
+				 , NOW()
+	    )
+	</insert>
+
+	<select id="getQuestionCnt" parameterType="HashMap" resultType="Integer">
+		/* HelpCenterMapper.getQuestionCnt */
+		select
+			   count(inquiryId)
+		  from ank_sys_qna
+		 where uid = #{angkorId}
+	</select>
+
+	<select id="getQuestionList" parameterType="map" resultType="HashMap">
+		/* HelpCenterMapper.getQuestionList */
+		select
+			   inquiryId as seq
+			<if test='params.language == "en"'>
+				, CASE
+						when status = 0 then 'Unanswered'
+						when status = 1 then 'Answered'
+						when status = 2 then 'Unanswered'
+				   end as status
+			</if>
+			<if test='params.language == "khr"'>
+				, CASE
+					when status = 0 then 'មិនបានឆ្លើយ'
+					when status = 1 then 'បានឆ្លើយ'
+					when status = 2 then 'មិនបានឆ្លើយ'
+				end as status
+			</if>
+			 , title
+			 , DATE_FORMAT(reg_dt, '%d.%m.%Y %H:%i') AS regDt
+		 from ank_sys_qna
+		where uid = #{params.angkorId}
+		order by reg_dt desc
+		limit #{paginginfo.pagingSize}
+		offset #{paginginfo.offset}
+	</select>
+
+	<select id="getQuestionDetail" parameterType="HashMap" resultType="HashMap">
+		/* HelpCenterMapper.getQuestionDetail */
+		select
+			   ank_sys_qna.inquiryId as seq
+			<if test='language == "en"'>
+				 , CASE
+					   WHEN ank_sys_qna.status = 0   THEN 'Unanswered'
+					   WHEN ank_sys_qna.status = 1   THEN 'Answered'
+					   WHEN ank_sys_qna.status = 2   THEN 'Unanswered'
+				   end as status
+			</if>
+			<if test='language == "khr"'>
+				, CASE
+				WHEN ank_sys_qna.status = 0   THEN 'មិនបានឆ្លើយ'
+				WHEN ank_sys_qna.status = 1   THEN 'បានឆ្លើយ'
+				WHEN ank_sys_qna.status = 2   THEN 'មិនបានឆ្លើយ'
+				end as status
+			</if>
+			 , ank_sys_qna.title
+			 , ank_sys_qna.content
+			 , DATE_FORMAT(ank_sys_qna.reg_dt, '%d.%m.%Y %H:%i') AS regDt
+		from ank_sys_qna
+		where ank_sys_qna.inquiryId = #{seq}
+	</select>
+
+	<select id="getQuestionFiles" parameterType="HashMap" resultType="HashMap">
+		/* HelpCenterMapper.getQuestionFiles */
+		select
+			   path as fileUrl
+			 , `size` as fileSize
+             , thumb as fileThumb
+		 from ank_sys_qna_file
+		where inquiryId = #{seq}
+	</select>
+
+	<select id="getQuestionAnswer" parameterType="HashMap" resultType="HashMap">
+		/* HelpCenterMapper.getQuestionAnswer */
+		select
+			   title
+			 , content
+			 , DATE_FORMAT(reg_dt, '%d.%m.%Y %H:%i') AS regDt
+		from ank_sys_qna_answer
+		where inquiryId = #{seq}
+	</select>
+
+</mapper>

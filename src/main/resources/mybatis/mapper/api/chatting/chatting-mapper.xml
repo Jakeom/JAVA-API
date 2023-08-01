@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.chatting.ChattingMapper">
+
+    <select id="getChatting" parameterType="Hashmap" resultType="Hashmap">
+        /* ChattingMapper.getChatting */
+        SELECT
+            angkorid AS angkorId,
+            in_chatbackop AS inChatbackop,
+            in_chatmbackop AS inChatmbackop,
+            in_image_resolution AS inImageResolution,
+            in_sortrooms AS inSortrooms,
+            in_videos AS inVideos,
+            in_videos_convert AS inVideosConvert,
+            DATE_FORMAT(update_dt, '%Y-%m-%d') AS updateDt
+        FROM ank_sys_chatting
+        WHERE angkorid = #{angkorId}
+    </select>
+
+    <update id="updateChatting" parameterType="HashMap">
+        /* ChattingMapper.updateChatting */
+        UPDATE ank_sys_chatting
+        SET
+            in_image_resolution = #{inImageResolution},
+            in_sortrooms = #{inSortrooms},
+            in_videos = #{inVideos},
+            in_videos_convert = #{inVideosConvert},
+            update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <update id="updateChattingToImageQuality" parameterType="HashMap">
+        /* ChattingMapper.updateChattingToImageQuality */
+        UPDATE ank_sys_chatting
+        SET
+            in_image_resolution = #{inImageResolution},
+            update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <update id="updateChattingToVideoQuality" parameterType="HashMap">
+        /* ChattingMapper.updateChattingToVideoQuality */
+        UPDATE ank_sys_chatting
+        SET
+            in_videos = #{inVideos},
+            update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <select id="checkMyAngKorId" parameterType="HashMap" resultType="Integer">
+        /* ChattingMapper.checkMyAngKorId */
+        select
+            count(angkorId)
+        from ank_user
+        where angkorid = #{angkorId} and del_yn = 0 and status = 1
+    </select>
+
+    <select id="getParentEmoticonList" parameterType="HashMap" resultType="HashMap">
+        /* ChattingMapper.getParentEmoticonList */
+        select
+               ank_sys_emoti_master.guid as emoti_seq
+             , ank_sys_emoti_master.emoti_name
+             , (select file_path from ank_sys_emoti_shortcut where guid = ank_sys_emoti_master.guid and display_order = 1) as emoti_url
+         from ank_sys_emoti_master
+        where ank_sys_emoti_master.status = 1
+     order by ank_sys_emoti_master.reg_dt asc
+    </select>
+
+    <select id="getParentEmoticon" parameterType="Hashmap" resultType="Hashmap">
+        /* ChattingMapper.getParentEmoticon */
+        select
+               ank_sys_emoti_master.guid as emoti_seq
+          from ank_sys_emoti_master
+     left join ank_sys_emoti_list on ank_sys_emoti_list.guid = ank_sys_emoti_master.guid
+         where ank_sys_emoti_master.status = 1
+           and ank_sys_emoti_list.disp_ord = 1
+      order by ank_sys_emoti_master.reg_dt desc
+         limit 0,1
+    </select>
+
+    <select id="getChildEmoticonList" parameterType="HashMap" resultType="HashMap">
+        /* ChattingMapper.getChildEmoticonList */
+        select
+               disp_ord as emoti_ord
+             , absfileparh as emoti_url
+         from ank_sys_emoti_list
+        where guid = #{seq}
+     order by disp_ord asc
+    </select>
+
+    <select id="getPublicKeyAndInfoOfUser" parameterType="java.lang.String" resultType="HashMap">
+        /* ChattingMapper.getPublicKeyAndInfoOfUser */
+        select
+               name as nickname
+             , icon as profileUrl
+             , public_key
+        from ank_user
+        where angkorid = #{angkorId}
+          and del_yn = 0 and status = 1
+    </select>
+
+    <select id="getPublicKeyOfUser" parameterType="java.lang.String" resultType="java.lang.String">
+        /* ChattingMapper.getPublicKeyOfUser */
+       select
+              public_key
+         from ank_user
+        where angkorid = #{angkorId}
+          and del_yn = 0 and status = 1
+    </select>
+
+    <select id="getPrivacySettingUser" parameterType="HashMap" resultType="HashMap">
+        /* ChattingMapper.getPrivacySettingUser */
+        select
+               ank_sys_security.in_group_range as friend_group
+             , if((select count(friends_phonenumber) from ank_myfriends
+                   left join ank_user on ank_user.phone = ank_myfriends.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+                   where ank_myfriends.angkorid = #{friendAngkorId} and ank_myfriends.friends_angkorid = #{angkorId})> 0, 'Y', 'N') as friend_yn
+             , if((select count(friends_angkorid) from ank_sys_blockusers
+                   left join ank_user on ank_user.angkorid = ank_sys_blockusers.friends_angkorid
+                   where ank_sys_blockusers.angkorid = #{friendAngkorId} and ank_sys_blockusers.friends_angkorid = #{angkorId})> 0, 'Y', 'N') as friend_block_yn
+        from ank_user
+   left join ank_sys_security on ank_user.angkorid = ank_sys_security.angkorid
+        where ank_user.angkorid = #{friendAngkorId}
+    </select>
+
+</mapper>
+

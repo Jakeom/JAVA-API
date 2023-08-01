@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.display.DisplayMapper">
+
+    <select id="getDisplay" parameterType="Hashmap" resultType="Hashmap">
+        /* DisplayMapper.getDisplay */
+        SELECT
+                ank_group_code_child.ord as backgroundSeq,
+                ank_group_code_child.child_code_name_en  AS inChatbackground,
+                ank_sys_display.in_fontsize AS inFontsize,
+                ank_sys_display.in_nightmode AS inNightmode,
+                ank_sys_display.in_themes AS inThemes,
+                DATE_FORMAT(ank_sys_display.update_dt, '%Y-%m-%d') AS updateDt
+          FROM ank_sys_display
+     left join ank_group_code_child on ank_group_code_child.child_code = ank_sys_display.in_chatbackground
+           and ank_group_code_child.group_code = 'G008'
+         WHERE angkorid = #{angkorId}
+    </select>
+
+    <update id="updateDisplay" parameterType="HashMap">
+        /* DisplayMapper.updateDisplay */
+        UPDATE ank_sys_display
+        SET
+            in_chatbackground = (select child_code from ank_group_code_child where group_code = 'G008' and ord = #{backgroundSeq}),
+            in_fontsize = #{inFontsize},
+            in_nightmode = #{inNightmode},
+            in_themes = #{inThemes},
+            update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <select id="getBackgroundColor" parameterType="Hashmap" resultType="Hashmap">
+        /* ChattingMapper.getBackgroundColor */
+        select
+               ord as seq
+             , child_code_name_en as inChatbackground
+         from ank_group_code_child
+        where group_code = 'G008'
+    </select>
+
+    <update id="setBackgroundColor" parameterType="HashMap">
+        /* ChattingMapper.setBackgroundColor */
+        update ank_sys_display
+        set in_chatbackground = (select child_code from ank_group_code_child where group_code = 'G008' and ord = #{backgroundSeq})
+        where angkorid = #{angkorId}
+    </update>
+
+    <update id="setFontSize" parameterType="HashMap">
+        /* ChattingMapper.setFontSize */
+        update ank_sys_display
+        set in_fontsize = #{inFontsize}
+        where angkorid = #{angkorId}
+    </update>
+
+</mapper>
+

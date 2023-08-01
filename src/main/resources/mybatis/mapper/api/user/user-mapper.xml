@@ -1,0 +1,608 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.user.UserMapper">
+    <select id="checkIsUserId" parameterType="Hashmap" resultType="Integer">
+        /* UserMapper.checkIsUserId */
+        SELECT
+               count(userid)
+          FROM ank_user
+         WHERE userid = #{userId}
+           AND del_yn = 0
+           AND status = 1
+    </select>
+
+    <select id="getMyId" parameterType="Hashmap" resultType="Hashmap">
+        /* UserMapper.getMyId */
+        SELECT
+               phonecode as phoneCode
+             , phonenumber as phoneNumber
+             , status
+             , uuid
+          FROM ank_user
+         WHERE userid = #{userId}
+           AND del_yn = 0
+    </select>
+
+    <insert id="signUp" parameterType="HashMap">
+        /* UserMapper.signUp */
+        INSERT INTO ank_user (
+                 angkorid
+               , birthday_dt
+               , create_dt
+               , del_yn
+               , email
+                <if test='gender != null and gender != ""'>
+                   , gender
+                </if>
+               , greeting_text
+               , icon
+               , `language`
+               , lastaccess_dt
+               , `name`
+               , password
+               , phonecode
+               , phone
+               , phonenumber
+               , privacy_profile
+               , status
+               , uuid
+               , public_key
+               <if test='userId != null and userId != ""'>
+               , userid /* userId 추가된 소스 */
+               </if>
+        ) VALUES (
+                   #{angkorId}
+                 , #{birthday}
+                 , NOW()
+                 , 0
+                 , #{email}
+                <if test='gender != null and gender != ""'>
+                    <if test='gender == "m"'>
+                        , 1
+                    </if>
+                    <if test='gender == "f"'>
+                        , 2
+                    </if>
+                    <if test='gender == "o"'>
+                        , 3
+                    </if>
+                </if>
+                 , #{profileMessage}
+                 , #{profileUrl}
+                 , #{language}
+                 , NOW()
+                 , #{userName}
+                 , #{password}
+                 , #{phoneCode}
+                 , #{oriPhone}
+                 , #{phone}
+                 , 0
+                 , 1
+                 , #{uuid}
+                 , #{publicKey}
+                 <if test='userId != null and userId != ""'>
+                 , #{userId}  /* userId 추가된 소스 */
+                 </if>
+         )
+    </insert>
+
+    <update id="deleteSamePhoneUser" parameterType="HashMap">
+        /* UserMapper.deleteSamePhoneUser */
+        <selectKey keyProperty="deleteAngkorId" keyColumn="angkorid" resultType="java.lang.String" order="BEFORE">
+            select IFNULL((select angkorid from ank_user
+            where phonenumber =  #{phone} and angkorid != #{angkorId} and del_yn = 0), 'N') AS deleteAngkorId
+        </selectKey>
+        update ank_user set
+               del_yn = 1
+         where angkorid = #{deleteAngkorId}
+    </update>
+
+    <delete id="deleteFavorite" parameterType="HashMap">
+        /* UserMapper.deleteFavorite */
+        delete from ank_myfavorite
+        where friends_angkorid = #{deleteAngkorId} or angkorid = #{deleteAngkorId}
+    </delete>
+
+    <delete id="deleteFriend" parameterType="HashMap">
+        /* UserMapper.deleteFriend */
+        delete from ank_myfriends
+        where friends_angkorid = #{deleteAngkorId} or angkorid = #{deleteAngkorId}
+    </delete>
+
+    <delete id="deleteBlock" parameterType="HashMap">
+        /* UserMapper.deleteBlock */
+        delete from ank_sys_blockusers
+        where friends_angkorid = #{deleteAngkorId} or angkorid = #{deleteAngkorId}
+    </delete>
+
+    <update id="updateFriendNickName" parameterType="HashMap">
+        /* UserMapper.updateFriendNickName */
+        UPDATE ank_myfriends SET friends_name = #{friend_name}
+        where friends_angkorid = #{friend_angkorId}
+    </update>
+
+    <update id="updateFavoriteNickName" parameterType="HashMap">
+        /* UserMapper.updateFavoriteNickName */
+        UPDATE ank_myfavorite SET friends_name = #{friend_name}
+        where friends_angkorid = #{friend_angkorId}
+    </update>
+
+    <insert id="addUserIcon" parameterType="HashMap">
+        /* UserMapper.addUserIcon */
+        INSERT INTO ank_usericon (
+                   angkorid
+                 , create_dt
+                 , icon
+        ) VALUES (
+                   #{angkorId}
+                 , NOW()
+                 , #{profileUrl}
+        )
+    </insert>
+
+    <insert id="addUserAgree" parameterType="HashMap">
+        /* UserMapper.addUserAgree */
+        INSERT INTO ank_user_agreement (
+          guid
+        , angkorid
+        , term_ord
+        , agreement
+        , change_dt
+        ) VALUES (
+          #{guid}
+        , #{angkorId}
+        , #{termOrd}
+        , #{agreement}
+        , NOW()
+        )
+    </insert>
+
+    <insert id="addSysVersion" parameterType="HashMap">
+        /* UserMapper.addSysVersion */
+        INSERT INTO ank_sys_version (
+                   angkorid
+                 , os_info
+                 , version
+        ) VALUES (
+                   #{angkorId}
+                 , #{osType}
+                 , #{version}
+         )
+    </insert>
+
+    <insert id="addSysNoti" parameterType="HashMap">
+        /* UserMapper.addSysNoti */
+        INSERT INTO ank_sys_noti (
+             angkorid
+           , add_auto
+           , in_appsounds
+           , in_count_unread_message
+           , in_name_on_lock_screen
+           , in_new_contacts
+           , in_preview
+           , in_vibrate
+           , new_group
+        ) VALUES (
+              #{angkorId}
+             , 1
+             , 1
+             , 1
+             , 1
+             , 1
+             , 1
+             , 1
+             , 1
+         )
+    </insert>
+
+    <insert id="addSysSecurity" parameterType="HashMap">
+        /* UserMapper.addSysSecurity */
+        INSERT INTO ank_sys_security (
+                   angkorid
+                 , in_call_range
+                 , in_email_open
+                 , in_faceid
+                 , in_group_range
+                 , in_message_range
+                 , in_online_range
+                 , in_photo_range
+                 , in_twostep
+        ) VALUES (
+                  #{angkorId}
+                 , 2
+                 , 2
+                 , 1
+                 , 2
+                 , 2
+                 , 2
+                 , 2
+                 , 1
+                 )
+    </insert>
+
+    <insert id="addSysFriends" parameterType="HashMap">
+        /* UserMapper.addSysFriends */
+        INSERT INTO ank_sys_friends (
+                   angkorid
+                 , add_auto
+                 , in_allow_others
+                 , in_recommend_friends
+                 , in_refresh
+        ) VALUES (
+                   #{angkorId}
+                 , 1
+                 , 1
+                 , 1
+                 , 0
+         )
+    </insert>
+
+    <insert id="addSysChatting" parameterType="HashMap">
+        /* UserMapper.addSysChatting */
+        INSERT INTO ank_sys_chatting (
+                  angkorid
+                , in_chatbackop
+                , in_chatmbackop
+                , in_image_resolution
+                , in_sortrooms
+                , in_videos
+                , in_videos_convert
+        ) VALUES (
+                   #{angkorId}
+                 , 1
+                 , 1
+                 , 'D002'
+                 , 'D001'
+                 , 'D002'
+                 , 1
+                 )
+    </insert>
+
+    <insert id="addSysDisplay" parameterType="HashMap">
+        /* UserMapper.addSysDisplay */
+        INSERT INTO ank_sys_display (
+                   angkorid
+                 , in_chatbackground
+                 , in_fontsize
+                 , in_nightmode
+                 , in_themes
+        ) VALUES (
+                  #{angkorId}
+                 , 'D001'
+                 , 14
+                 , 0
+                 , 'D001'
+                 )
+    </insert>
+
+    <select id="getUser" parameterType="Hashmap" resultType="Hashmap">
+        /* UserMapper.getUser */
+        SELECT
+                  ank_user.angkorid as angkorId
+                , ank_user.userid as userId
+                , ank_user.email
+                , DATE_FORMAT(ank_user.birthday_dt, '%Y-%m-%d') AS birthday_dt
+                , ank_user.name as userName
+                , ank_user.gender
+                , ank_user.greeting_text as profileMessage
+                , ank_user.icon as profileUrl
+                , ank_user.phonecode
+                , ank_user.phonenumber
+                , ank_user.privacy_profile
+                , ank_user.show_profile
+                , ank_user.qrcode_url as qrcodeUrl
+                , ank_group_code_child.child_code_name_en as `language`
+        FROM ank_user
+        LEFT JOIN ank_group_code on ank_group_code.group_code = 'G001'
+        LEFT JOIN ank_group_code_child on ank_group_code.group_code = ank_group_code_child.group_code and ank_user.`language` = ank_group_code_child.child_code
+        WHERE 1=1
+        <if test='angkorId != null and angkorId != ""'>
+            AND angkorid = #{angkorId}
+        </if>
+        <if test='AngkorId != null and AngkorId != ""'>
+            AND angkorid = #{AngkorId}
+        </if>
+        AND del_yn = 0 AND status = 1
+    </select>
+
+    <select id="getMainProfileUrl" parameterType="HashMap" resultType="java.lang.String">
+        /* UserMapper.getMainProfileUrl */
+        select
+              icon
+         from ank_user
+        where angkorid = #{angkorId}
+    </select>
+
+    <select id="getRecentProfileUrl" parameterType="HashMap" resultType="java.lang.String">
+        /* UserMapper.getRecentProfileUrl */
+        select
+            icon as recentProfileUrl
+        from ank_usericon
+        where angkorid = #{angkorId}
+        and hide_yn = 0
+        order by seq desc
+        limit 0,1
+    </select>
+
+    <update id="deleteUser" parameterType="HashMap">
+        /* UserMapper.deleteUser */
+        UPDATE ank_user SET del_yn = 1, update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <update id="updateEmail" parameterType="HashMap">
+        /* UserMapper.updateEmail */
+        UPDATE ank_user SET email = #{email}, update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <update id="checkAndUpdateEmailIsUsed" parameterType="HashMap">
+        /* UserMapper.checkAndUpdateEmailIsUsed */
+        update ank_user set email = null, update_dt = now()
+        where angkorid in
+        (
+            select angkorid from ank_user
+            where angkorid != #{angkorId}
+            and email = #{email}
+            and status = 1 and del_yn = 0
+        )
+    </update>
+
+    <select id="checkIsUsePhoneNumber" parameterType="Hashmap" resultType="Integer">
+        /* UserMapper.checkIsUsePhoneNumber */
+        select
+               count(angkorId)
+          from ank_user
+         where phoneNumber = #{phoneNumber} and del_yn = 0 and status = 1
+    </select>
+
+    <update id="updatePhone" parameterType="HashMap">
+        /* UserMapper.updatePhone */
+        update ank_user set phonenumber = #{phoneNumber}, phonecode = #{phoneCode}, phone = #{oriPhone}
+        where angkorid = #{angkorId}
+    </update>
+
+    <update id="updatePw" parameterType="HashMap">
+        /* UserMapper.updatePw */
+        update ank_user set password = #{newPassword}, password_dt = NOW()
+        where email = #{email} and del_yn = 0
+    </update>
+
+    <update id="updatePwChange" parameterType="HashMap">
+        /* UserMapper.updatePwChange */
+        update ank_user set password = #{newPassword}, password_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <update id="updateInfo" parameterType="HashMap">
+        /* UserMapper.updateInfo */
+        update ank_user set
+          `name` = #{userName}
+        <if test='profileUrl != null and profileUrl != ""'>
+            , icon = #{profileUrl}
+        </if>
+        <if test='profileUrl == ""'>
+            , icon = null
+        </if>
+        <if test='profileMessage != null and profileMessage != ""'>
+          ,greeting_text = #{profileMessage}
+        </if>
+        <if test='profileMessage == null'>
+            ,greeting_text = null
+        </if>
+        <if test='birth != null and birth != ""'>
+          , birthday_dt = #{birth}
+        </if>
+        <if test='gender != null and gender != ""'>
+            <if test='gender == "m"'>
+                , gender =  1
+            </if>
+            <if test='gender == "f"'>
+                , gender =  2
+            </if>
+            <if test='gender == "o"'>
+                , gender =  3
+            </if>
+        </if>
+        <if test='gender == null'>
+            , gender = null
+        </if>
+        , privacy_profile = #{privacyProfile}
+        , update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <update id="updateLanguage" parameterType="HashMap">
+        /* UserMapper.updateLanguage */
+        update ank_user set language = #{language}, update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <select id="checkPositionCnt" parameterType="Hashmap" resultType="Integer">
+        /* UserMapper.checkPosition */
+        select
+        count(angkorid)
+        from ank_user_position
+        where 1=1
+        <if test='angkorId != null and angkorId != ""'>
+            AND angkorid = #{angkorId}
+        </if>
+    </select>
+
+    <update id="updatePosition" parameterType="HashMap">
+        /* UserMapper.updatePosition */
+        update ank_user_position set chk_cd = #{chkCd}, create_dt = NOW(), latitude = #{latitude}, longitude = #{longitude}
+        where angkorid = #{angkorId}
+    </update>
+
+    <insert id="insertPosition" parameterType="HashMap">
+        /* UserMapper.insertPosition */
+        INSERT INTO ank_user_position (
+                   angkorid
+                 , chk_cd
+                 , create_dt
+                 , latitude
+                 , longitude
+        ) VALUES (
+                   #{angkorId}
+                 , #{chkCd}
+                 , NOW()
+                 , #{latitude}
+                 , #{longitude}
+        )
+    </insert>
+
+    <select id="checkMyProfileImage" parameterType="Hashmap" resultType="Hashmap">
+        /* UserMapper.checkMyProfileImage */
+        select
+               ank_user.icon as currentProfileUrl
+             , ank_usericon.icon
+          from ank_usericon
+     left join ank_user on ank_usericon.angkorid = ank_user.angkorid
+         where ank_user.angkorid = #{angkorId} and ank_usericon.seq = #{profileSeq}
+    </select>
+
+    <update id="updateProfile" parameterType="HashMap">
+        /* UserMapper.updateProfile */
+        update ank_usericon set hide_yn = 0, create_dt = NOW()
+        where seq = #{profileSeq}
+    </update>
+
+    <update id="hideProfile" parameterType="HashMap">
+        /* UserMapper.hideProfile */
+        update ank_usericon set hide_yn = 1
+        where seq = #{profileSeq}
+    </update>
+
+    <delete id="deleteProfile" parameterType="HashMap">
+        /* deleteProfile.deleteProfile */
+        delete from ank_usericon
+        where seq = #{profileSeq}
+    </delete>
+
+    <select id="checkDau" parameterType="Hashmap" resultType="Integer">
+        /* UserMapper.checkDau */
+        select
+        count(dau_date)
+        from ank_cms_user_days
+        where dau_date = #{date}
+    </select>
+
+    <insert id="insertDau" parameterType="HashMap">
+        /* UserMapper.insertDau */        
+        INSERT INTO ank_cms_user_days (
+                    dau_date
+                  , dau_cnt
+                  , dau_type
+        ) VALUES (
+                   #{date}
+                 , #{dau}
+                 , #{dau_type}
+        )
+        on duplicate key UPDATE
+        dau_cnt = #{dau}
+    </insert>
+    
+    <insert id="insertUserActivation" parameterType="HashMap">
+        /* UserMapper.insertUserActivation */        
+        INSERT INTO ank_cms_user_activation (
+                    act_date
+                  , act_time
+                  , act_cnt
+                  , act_type
+        ) VALUES (
+                   DATE_FORMAT(NOW(), '%Y-%m-%d')
+                 , DATE_FORMAT(NOW(), '%H')
+                 , #{act_cnt}
+                 , #{act_type}
+        )
+        on duplicate key UPDATE
+        act_cnt = #{act_cnt}
+    </insert>
+
+    <select id="getRegistEmailUser" parameterType="Hashmap" resultType="Hashmap">
+        /* UserMapper.getRegistEmailUser */
+        select
+               angkorid as angkorId
+             , userid as userId
+             , uuid
+         from ank_user
+        where email = #{email}
+          and del_yn = 0 and status = 1
+    </select>
+
+    <update id="updateUserId" parameterType="HashMap">
+        /* UserMapper.updateUserId */
+        update ank_user set userid = #{userId}, public_key = #{publicKey}, update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <insert id="insertTest" parameterType="HashMap">
+    	/* UserMapper.insertTest */
+        insert into ank_hook (str) VALUES (#{str})
+    </insert>
+    
+    <update id="updateUserChatSound" parameterType="HashMap">
+    	/* UserMapper.updateUserChatSound */
+    	INSERT INTO ank_user_chat_sound (angkorid,channel_url,sound_nm) VALUES (#{angkorId},#{channelUrl},#{soundNm})
+		on duplicate key UPDATE
+		sound_nm = #{soundNm}
+    </update>
+    
+    <select id="getUserChatSound" parameterType="Hashmap" resultType="String">
+    	SELECT sound_nm FROM ank_user_chat_sound WHERE channel_url = #{channelUrl} AND angkorid = #{angkorId} LIMIT 1
+    </select>
+    
+    <insert id="insertUserPushToken" parameterType="HashMap">
+    	/* UserMapper.insertTest */
+        insert into ank_user_push_token (angkorid,os,token) VALUES (#{angkorId},#{os},#{token})
+        on duplicate key UPDATE
+        os = #{os}
+        ,token = #{token} 
+    </insert>
+    
+    <select id="getUserPushToken" parameterType="Hashmap" resultType="Hashmap">
+    	SELECT * 
+    	, IFNULL((SELECT onoff FROM ank_user_onoff WHERE angkorid = #{angkorId} limit 1),'N') AS onoff
+    	FROM ank_user_push_token WHERE angkorid = #{angkorId} 
+    	AND (SELECT COUNT(1) FROM ank_sys_blockusers WHERE angkorid = #{angkorId} AND friends_angkorid = #{senderId}) = 0
+    	LIMIT 1
+    </select>
+    
+    <insert id="isnertMessagePayload" parameterType="Hashmap">
+    	INSERT ank_user_message_payload (angkorid,custom_type,payload,created_at) 
+    	VALUES(#{angkorid},#{custom_type},#{payload}, #{created_at})
+    </insert>
+    
+    <select id="getMessagePayload" parameterType="Hashmap" resultType="String">
+    	SELECT payload FROM ank_user_message_payload 
+    	WHERE angkorid = #{angkorId} AND custom_type = #{customType}
+    	<if test="createdAt != null and createdAt != ''">
+			AND #{createdAt} > created_at 
+		</if>
+    	ORDER BY id DESC    	
+    </select>
+    
+    <insert id="updateUserOnoff" parameterType="Hashmap">
+    	INSERT ank_user_onoff (angkorid,onoff) 
+    	VALUES(#{angkorId},#{onoff})
+    	on duplicate key UPDATE
+    	onoff = #{onoff}
+    </insert>
+    
+    
+    <select id="getUserOnoff" parameterType="Hashmap" resultType="String">
+    	SELECT onoff FROM ank_user_onoff 
+    	WHERE angkorid = #{angkorId} limit 1
+ 	
+    </select>
+
+	<select id="getNoTokenUser" resultType="String">
+		SELECT a.angkorid FROM ank_user a
+		LEFT JOIN ank_user_push_token b ON a.angkorid = b.angkorid
+		WHERE b.angkorid IS NULL
+	</select>
+    
+</mapper>
+

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.code.CodeMapper">
+
+	<select id="getCodeAllList" parameterType="HashMap" resultType="HashMap">
+		/* CodeMapper.getCodeAllList */
+		select
+		       group_code
+		     , group_code_name_en
+		     , group_code_name_khmr
+			 , group_code_type
+			 , remark
+			 , create_id
+			 , create_dt
+			 , update_dt
+			 , update_id
+		  from ank_group_code
+		  <if test='end_cnt > 0'>
+			LIMIT #{start_cnt}, #{end_cnt}
+		  </if>
+	</select>
+
+	<select id="getListByCode" parameterType="HashMap" resultType="Hashmap">
+		/* CodeMapper.getListByCode */
+		select
+			   group_code
+			 , child_code
+			 , child_code_name_en
+			 , child_code_name_khmr
+			 , remark
+		  from ank_group_code_child
+		  <if test='end_cnt > 0'>
+			LIMIT #{start_cnt}, #{end_cnt}
+		  </if>
+	</select>
+
+	<select id="getInfoByGroupChild" parameterType="HashMap" resultType="Hashmap">
+		/* CodeMapper.getInfoByGroupChild */
+		select
+		group_code
+		, child_code
+		, child_code_name_en
+		, child_code_name_khmr
+		, remark
+		from ank_group_code_child
+		where 1=1
+		<if test='code_name != null and code_name != ""'>
+			and group_code like concat('%', #{code_name}, '%')
+		</if>
+	</select>
+
+	<insert id="addGroupCode" parameterType="HashMap">
+		/* CodeMapper.insertReportEvent */
+		INSERT INTO ank_group_code (
+			  group_code
+			, group_code_name_en
+			, group_code_name_khmr
+			, group_code_type
+			, remark
+			, create_dt
+			, create_id
+			, update_dt
+			, update_id
+		) VALUES (
+			  #{group_code}
+			, #{group_code_name_en}
+			, #{group_code_name_khmr}
+			, #{group_code_type}
+			, #{remark}
+			, NOW()
+			, #{create_id}
+			, NOW()
+			, #{create_id}
+		)
+	</insert>
+
+	<delete id="deleteGroupCode" parameterType="HashMap">
+		/* CodeMapper.deleteGroupCode */
+		delete from ank_group_code
+		where group_code = #{code}
+	</delete>
+</mapper>
+

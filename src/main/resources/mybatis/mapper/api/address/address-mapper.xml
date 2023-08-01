@@ -1,0 +1,586 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.address.AddressMapper">
+
+	<select id="getAllAddresList" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getAllAddresList */
+		select
+			   ank_myfriends.friends_angkorId as friend_angkorId
+			 , ank_myfriends.friends_phonenumber as friend_phonenumber
+			 , ank_myfriends.chatting_message as friend_profileMessage
+			 , ank_myfriends.friends_name as friend_name
+			 , ank_user.icon as friend_url
+			 , if(ank_user.privacy_profile > 0, 'Y', 'N') as friend_privacyProfile
+			 , if((select count(friends_angkorId) from ank_myfavorite
+				   left join ank_user on ank_user.phonenumber = ank_myfavorite.friends_phonenumber
+				   where ank_myfavorite.angkorid = #{angkorId} and ank_myfavorite.friends_angkorid = friend_angkorId)> 0, 'Y', 'N') as friend_favorite_yn
+		from ank_myfriends
+	 left join ank_user on ank_user.angkorid = ank_myfriends.friends_angkorId
+		where ank_myfriends.angkorid = #{angkorId} and ank_user.del_yn = 0
+		order by ank_myfriends.friends_name asc
+	</select>
+
+	<select id="getFavoriteAddresList" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getFavoriteAddresList */
+		select
+			   ank_myfriends.friends_angkorId as friend_angkorId
+			 , ank_myfriends.friends_phonenumber as friend_phonenumber
+			 , ank_myfriends.chatting_message as friend_profileMessage
+			 , ank_myfriends.friends_name as friend_name
+			 , ank_user.icon as friend_url
+			 , if(ank_user.privacy_profile > 0, 'Y', 'N') as friend_privacyProfile
+		from ank_myfriends
+	 left join ank_myfavorite on ank_myfavorite.angkorid = ank_myfriends.angkorid
+	 left join ank_user on ank_user.angkorid = ank_myfriends.friends_angkorId
+		where ank_myfriends.angkorid = #{angkorId} and ank_user.del_yn = 0
+		  and ank_myfavorite.friends_angkorId = ank_myfriends.friends_angkorId
+		order by ank_myfriends.friends_name asc
+	</select>
+
+	<select id="getMyProfileInfo" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getMyProfileInfo */
+		select
+			   angkorid as angkorId
+			 , name
+			 , phonecode
+			 , phonenumber
+			 , greeting_text as profileMessage
+			 , icon as profileUrl
+			 , privacy_profile
+		from ank_user
+		where angkorid = #{angkorId}
+		order by create_dt desc
+	</select>
+
+	<select id="getAngkorIdByPhoneAndPhoneCode" parameterType="HashMap" resultType="java.lang.String">
+		/* AddressMapper.getAngkorIdByPhoneAndPhoneCode */
+		select angkorid
+		  from ank_user
+	     where phonenumber = #{friend_phonenumber}
+		   and del_yn = 0 and status = 1
+	</select>
+
+	<select id="getAnotherUserProfileInfo" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getAnotherUserProfileInfo */
+		select
+			   ank_user.angkorid as friend_angkorId
+		     , if((select count(friends_name) from ank_myfriends where angkorid = #{angkorId} and friends_angkorid = #{friendAngkorId}) > 0,
+			   (select friends_name from ank_myfriends where angkorid = #{angkorId} and friends_angkorid = #{friendAngkorId})
+			 , ank_user.name) AS friend_name
+			 , ank_user.phonecode as friend_phonecode
+			 , ank_user.phonenumber as friend_phonenumber
+			 , ank_user.greeting_text as friend_profileMessage
+			 , CASE
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = friend_angkorId) = 1 THEN ank_user.icon
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = friend_angkorId) = 2
+					   AND
+						IF((SELECT COUNT(friends_phonenumber) FROM ank_myfriends
+						    LEFT JOIN ank_user ON ank_user.phone = ank_myfriends.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+							WHERE ank_myfriends.angkorid = friend_angkorId AND ank_myfriends.friends_angkorid = #{angkorId}) > 0, 'Y', 'N') = 'Y' THEN ank_user.icon
+				   ELSE NULL
+			   END AS friend_url
+			 , ank_user.privacy_profile as friend_privacyProfile
+			 , if((select count(friends_phonenumber) from ank_myfriends
+				   left join ank_user on ank_user.phone = ank_myfriends.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+				   where ank_myfriends.angkorid = #{angkorId} and ank_myfriends.friends_angkorid = friend_angkorId)> 0, 'Y', 'N') as friend_yn
+			 , if((select count(friends_phonenumber) from ank_myfavorite
+				   left join ank_user on ank_user.phone = ank_myfavorite.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+				   where ank_myfavorite.angkorid = #{angkorId} and ank_myfavorite.friends_angkorid = friend_angkorId)> 0, 'Y', 'N') as friend_favorite_yn
+			 , if((select count(friends_angkorid) from ank_sys_blockusers
+				   left join ank_user on ank_user.angkorid = ank_sys_blockusers.friends_angkorid
+				   where ank_sys_blockusers.angkorid = #{angkorId} and ank_sys_blockusers.friends_angkorid = friend_angkorId)> 0, 'Y', 'N') as friend_block_yn
+		 from ank_user
+		where angkorid = #{friendAngkorId}
+		order by create_dt desc
+	</select>
+
+	<select id="checkBlock" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.checkBlock */
+		select
+			ank_user.angkorid
+			 , (select count(ank_user.angkorid) from ank_user where ank_user.angkorid  = #{friend_angkorId} and ank_user.del_yn = 0) as isUser
+			 , (select count(ank_sys_blockusers.friends_angkorid)
+				from ank_sys_blockusers
+						 left join ank_user on ank_user.angkorid = ank_sys_blockusers.angkorid
+				where ank_user.angkorid = #{angkorId} and ank_sys_blockusers.friends_angkorid = #{friend_angkorId}) as blockCnt
+		from ank_user
+		where ank_user.angkorid = #{angkorId}
+	</select>
+
+	<insert id="insertBlock" parameterType="HashMap">
+		/* AddressMapper.insertblock */
+		INSERT INTO ank_sys_blockusers (
+			  angkorid
+			, update_dt
+			, friends_angkorid
+		) VALUES (
+			  #{angkorId}
+			, NOW()
+			, #{friend_angkorId}
+		)
+	</insert>
+
+	<delete id="deleteBlock" parameterType="HashMap">
+		/* AddressMapper.deleteblock */
+		delete from ank_sys_blockusers
+		where angkorid = #{angkorId} AND friends_angkorid = #{friend_angkorId}
+	</delete>
+
+	<select id="checkFavorite" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.checkFavorite */
+		select
+			   ank_myfavorite.friends_angkorid as friends_angkorid
+		  from ank_myfavorite
+	 left join ank_user on ank_user.angkorid = ank_myfavorite.angkorid
+		 where ank_user.angkorid = #{angkorId} and ank_myfavorite.friends_angkorid = #{friend_angkorId}
+	</select>
+
+	<select id="getFriendInfo" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getFriendInfo */
+		select
+			   ank_myfriends.friends_phonenumber as friend_phonenumber
+			 , ank_myfriends.chatting_message as friend_profileMessage
+			 , ank_myfriends.friends_name as friend_name
+			 , ank_user.icon as friend_url
+		 from ank_myfriends
+    left join ank_user on ank_user.angkorid = ank_myfriends.angkorid
+		where ank_user.angkorid = #{angkorId} and ank_myfriends.friends_angkorid = #{friend_angkorId}
+	</select>
+
+	<insert id="insertFavorite" parameterType="HashMap">
+		/* AddressMapper.insertFavorite */
+		INSERT INTO ank_myfavorite (
+				 friends_angkorid
+			   , friends_phonenumber
+			   , angkorid
+			   , chatting_message
+			   , create_dt
+			   , friends_name
+			   , friends_url
+			   , update_dt
+		) VALUES (
+			   #{friend_angkorId}
+			 , #{friend_phonenumber}
+			 , #{angkorId}
+			 , #{chatting_message}
+			 , NOW()
+			 , #{friend_name}
+			 , #{friend_url}
+			 , NOW()
+				 )
+	</insert>
+
+	<delete id="deleteFavorite" parameterType="HashMap">
+		/* AddressMapper.deleteFavorite */
+		delete from ank_myfavorite
+		where angkorid = #{angkorId} AND friends_angkorid = #{friend_angkorId}
+	</delete>
+
+	<update id="updateShareProfile" parameterType="Hashmap" >
+		/* AddressMapper.updateShareProfile */
+		UPDATE ank_user SET show_profile = #{showProfileYn}, update_dt = NOW()
+		WHERE angkorid = #{angkorId}
+	</update>
+
+	<select id="checkFriendAngKorId" parameterType="java.lang.String" resultType="Integer">
+		/* AddressMapper.checkFriendAngKorId */
+		select
+			count(angkorId)
+		from ank_user
+		where angkorid = #{friendAngkorId} and del_yn = 0 and status = 1
+	</select>
+
+	<select id="checkMyAngKorId" parameterType="HashMap" resultType="Integer">
+		/* AddressMapper.checkMyAngKorId */
+		select
+			 count(angkorId)
+		from ank_user
+		where angkorid = #{angkorId} and del_yn = 0 and status = 1
+	</select>
+
+	<select id="checkRecommendYn" parameterType="HashMap" resultType="Integer">
+		/* AddressMapper.checkRecommendYn */
+		select in_recommend_friends from ank_sys_friends
+		where angkorid = #{angkorId}
+	</select>
+
+	<select id="getMyId" parameterType="Hashmap" resultType="Hashmap">
+		/* AddressMapper.getMyId */
+		SELECT
+			   userid as userId
+		     , qrcode_url as qrcodeUrl
+		 FROM ank_user
+		WHERE angkorid = #{angkorId}
+		  AND del_yn = 0 AND status = 1
+	</select>
+
+	<update id="insertMyQrCode" parameterType="Hashmap" >
+		/* AddressMapper.insertMyQrCode */
+		UPDATE ank_user SET qrcode_url = #{qrcodeUrl}, update_dt = NOW()
+		WHERE userid = #{userId}
+	</update>
+
+	<insert id="insertFriend" parameterType="HashMap">
+		/* AddressMapper.insertFriend */
+		insert into ank_myfriends(friends_angkorid, friends_phonenumber, angkorid, chatting_message, create_dt, friends_name, friends_url)
+		select
+		<if test='friend_angkorId != null and friend_angkorId != ""'>
+			#{friend_angkorId}
+		</if>
+		<if test='friend_angkorId == null or friend_angkorId == ""'>
+			angkorid
+		</if>
+		,phone, #{angkorId}, greeting_text, NOW(),
+		<if test='friend_name != null and friend_name != ""'>
+		       #{friend_name}
+		</if>
+		<if test='friend_name == null or friend_name == ""'>
+			   name
+		</if>
+	    , icon from ank_user where ank_user.del_yn = 0
+		<if test='friend_angkorId != null and friend_angkorId != ""'>
+			and ank_user.angkorid = #{friend_angkorId}
+		</if>
+		<if test='friend_phonenumber != null and friend_phonenumber != ""'>
+			and (ank_user.phonenumber = #{friend_phonenumber} or ank_user.phone = #{friend_phonenumber})
+		    and ank_user.angkorid != #{angkorId}
+		</if>
+		on duplicate key update friends_angkorid=VALUE(friends_angkorid), friends_phonenumber=VALUE(friends_phonenumber), chatting_message=VALUE(chatting_message), friends_name=VALUE(friends_name), friends_url=VALUE(friends_url), update_dt=NOW()
+	</insert>
+
+	<select id="checkBlockByFriendPhoneNumber" parameterType="HashMap" resultType="Integer">
+		/* AddressMapper.checkBlockByFriendPhoneNumber */
+		select count(ank_sys_blockusers.friends_angkorid) from ank_sys_blockusers
+	    left join ank_user on ank_user.angkorid = ank_sys_blockusers.friends_angkorid
+		where ank_sys_blockusers.angkorid = #{angkorId}
+		  and (ank_user.phonenumber = #{friend_phonenumber} or ank_user.phone = #{friend_phonenumber})
+	</select>
+
+	<insert id="insertAllMyPhoneAddrFriends" parameterType="HashMap">
+		/* AddressMapper.insertAllMyPhoneAddrFriends */
+		insert into ank_myfriends(friends_angkorid, friends_phonenumber, angkorid, chatting_message, create_dt, friends_name, friends_url)
+		select * from (
+			select ank_user.angkorid, ank_user.phone, #{angkorId}, ank_user.greeting_text, NOW()
+			<if test='friend_name != null'>
+				, #{friend_name}
+			</if>
+			<if test='friend_name == null'>
+				, ank_user.name
+			</if>
+			, ank_user.icon from ank_user
+			left join ank_sys_friends on ank_user.angkorid = ank_sys_friends.angkorid
+			where ank_sys_friends.in_allow_others = 1 and
+			(ank_user.phonenumber = #{friend_phonenumber} or ank_user.phone = #{friend_phonenumber}) and ank_user.del_yn = 0 and ank_user.angkorid != #{angkorId}
+		) ank_myfriends
+		on duplicate key update friends_angkorid=VALUE(friends_angkorid), friends_phonenumber=VALUE(friends_phonenumber), chatting_message=VALUE(chatting_message), friends_name=VALUE(friends_name), friends_url=VALUE(friends_url), update_dt=NOW()
+	</insert>
+
+	<select id="getMyFriendPhoneNumberList" parameterType="HashMap" resultType="java.lang.String">
+		/* AddressMapper.getMyFriendPhoneNumberList */
+		select
+			   ank_myfriends.friends_phonenumber
+		  from ank_myfriends
+	 left join ank_user on ank_user.angkorid = ank_myfriends.friends_angkorId and ank_user.del_yn = 0
+	 left join ank_sys_blockusers on ank_sys_blockusers.friends_angkorid = ank_myfriends.friends_angkorid
+		 where ank_myfriends.angkorid = #{angkorId}
+		   and ank_myfriends.friends_angkorid not in
+		       (
+				select ank_sys_blockusers.friends_angkorid
+				from ank_sys_blockusers
+				where ank_sys_blockusers.angkorid = #{angkorId}
+			   )
+	  order by ank_myfriends.friends_name asc
+	</select>
+
+	<select id="getAngkorIdByPhone" parameterType="java.lang.String" resultType="java.lang.String">
+		/* AddressMapper.getAngkorIdByPhone */
+		select angkorid from ank_user where phone = #{friend_phonenumber} and del_yn = 0 and status = 1
+	</select>
+
+	<select id="selectOneAngkorIdByPhone" parameterType="HashMap" resultType="java.lang.String">
+		/* AddressMapper.selectOneAngkorIdByPhone */
+		select angkorid from ank_user
+		where phone = #{friend_phonenumber} and phonecode = (select phonecode from ank_user where angkorid = #{angkorId})
+		  and del_yn = 0 and status = 1
+	</select>
+
+	<update id="updateFriendNameToBasic" parameterType="map">
+		/* AddressMapper.updateFriendNameToBasic */
+		UPDATE ank_myfriends SET
+				friends_name = (select name from ank_user where angkorid = #{friend_angkorId})
+		      , update_dt = NOW()
+		WHERE angkorid = #{angkorId} and friends_angkorid = #{friend_angkorId}
+	</update>
+
+	<delete id="deleteFriend" parameterType="HashMap">
+		/* AddressMapper.deleteFriend */
+		delete from ank_myfriends
+		where angkorid = #{angkorId} AND friends_angkorid = #{friend_angkorId}
+	</delete>
+
+	<select id="getProfilesImage" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getProfilesImage */
+		select
+			   seq
+			 , icon AS friend_url
+			 , if(hide_yn, 'Y', 'N') as hide_yn
+		 from ank_usericon
+		where angkorid = #{angkorId}
+	 order by create_dt desc
+	</select>
+
+	<select id="getFriendPrivacySetting" parameterType="HashMap" resultType="Integer">
+		/* AddressMapper.getFriendPrivacySetting */
+		select
+			  CASE
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = #{friendAngkorId}) = 1 THEN 1
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = #{friendAngkorId}) = 2
+					   AND
+						IF((SELECT COUNT(friends_phonenumber) FROM ank_myfriends
+						    LEFT JOIN ank_user ON ank_user.phone = ank_myfriends.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+							WHERE ank_myfriends.angkorid = #{friendAngkorId} AND ank_myfriends.friends_angkorid = #{angkorId}) > 0, 'Y', 'N') = 'Y' THEN 2
+				   ELSE 3
+			END AS in_photo_range
+		 from ank_user
+		where angkorid = #{friendAngkorId}
+	</select>
+
+	<select id="getFriendProfilesImage" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getFriendProfilesImage */
+		select
+			   seq
+			 , icon AS friend_url
+			 , if(hide_yn, 'Y', 'N') as hide_yn
+		 from ank_usericon
+		where angkorid = #{friendAngkorId}
+		  and hide_yn = 0
+	 order by create_dt desc
+	</select>
+
+	<select id="getMyPosition" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getMyPosition */
+		select
+			   latitude
+			 , longitude
+		  from ank_user_position
+		 where angkorid = #{angkorId}
+	</select>
+
+	<select id="getBlockFriend" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getBlockFriend */
+	 	 select ank_user.angkorid as angkorId
+	  	   from ank_sys_blockusers
+	  left join ank_user on ank_user.angkorid = ank_sys_blockusers.friends_angkorid
+		  where ank_sys_blockusers.angkorid = #{angkorId}
+		    and ank_user.angkorid = #{friend_angkorId}
+	</select>
+
+	<select id="getMyFriend" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getMyFriend */
+		select ank_user.angkorid as angkorId
+		  from ank_myfriends
+	 left join ank_user on ank_user.angkorid = ank_myfriends.friends_angkorId
+		 where ank_myfriends.angkorid = #{angkorId}
+		  and ank_user.angkorid = #{friend_angkorId}
+	</select>
+
+	<select id="getAddressListNearBy" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getAddressListNearBy */
+		<![CDATA[
+		select
+			   ank_user.angkorid as friend_angkorId
+			 , ank_user.greeting_text as friend_profileMessage
+			 , CASE
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = friend_angkorId) = 1 THEN ank_user.icon
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = friend_angkorId) = 2
+					   AND
+						IF((SELECT COUNT(friends_phonenumber) FROM ank_myfriends
+						    LEFT JOIN ank_user ON ank_user.phone = ank_myfriends.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+							WHERE ank_myfriends.angkorid = friend_angkorId AND ank_myfriends.friends_angkorid = #{angkorId}) > 0, 'Y', 'N') = 'Y' THEN ank_user.icon
+				   ELSE NULL
+			   END AS friend_url
+			 , ank_user.name as friend_name
+			 , ank_user.phonecode as friend_phonecode
+		     , ank_user.phonenumber as friend_phonenumber
+		     , ank_user.privacy_profile as friend_privacyProfile
+			 ,(6371000*acos(cos(radians(#{latitude}))*cos(radians(ank_user_position.latitude))*cos(radians(ank_user_position.longitude)
+			   -radians(#{longitude}))+sin(radians(#{latitude}))*sin(radians(ank_user_position.latitude))))
+			  as friend_distance
+		 from ank_user_position
+	left join ank_user on ank_user_position.angkorid = ank_user.angkorid
+		where ank_user_position.angkorid != #{angkorId}
+  		and ank_user.show_profile = 1 and ank_user.del_yn = 0
+		having friend_distance <= 1000
+		order by friend_distance
+		limit 0, 100
+		]]>
+	</select>
+
+	<select id="searchUserByPhoneNumber" parameterType="HashMap" resultType="Integer">
+		/* AddressMapper.searchUserByPhoneNumber */
+		select
+			count(angkorId)
+		from ank_user
+		where phonenumber = #{phoneNumber} and del_yn = 0 and status = 1
+	</select>
+
+	<select id="checkAllowOthers" parameterType="HashMap" resultType="Integer">
+		/* AddressMapper.checkAllowOthers */
+		select
+			   ank_sys_friends.in_allow_others
+		  from ank_user
+	 left join ank_sys_friends on ank_user.angkorid = ank_sys_friends.angkorid
+		 where ank_user.phonenumber = #{phoneNumber}
+		   and ank_user.del_yn = 0
+		   and ank_user.status = 1
+	</select>
+
+	<select id="getAddressInfoByPhone" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getAddressInfoByPhone */
+		SELECT
+			   ank_user.angkorid as friend_angkorId
+			 , if((select count(friends_name) from ank_myfriends where angkorid = #{angkorId} and friends_angkorid = #{friendAngkorId}) > 0,
+				  (select friends_name from ank_myfriends where angkorid = #{angkorId} and friends_angkorid = #{friendAngkorId})
+			 , ank_user.name) AS friend_name
+			 , ank_user.phonecode as friend_phonecode
+			 , ank_user.phonenumber as friend_phonenumber
+			 , ank_user.greeting_text as friend_profileMessage
+			 , CASE
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = friend_angkorId) = 1 THEN ank_user.icon
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = friend_angkorId) = 2
+					   AND
+						IF((SELECT COUNT(friends_phonenumber) FROM ank_myfriends
+						    LEFT JOIN ank_user ON ank_user.phone = ank_myfriends.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+							WHERE ank_myfriends.angkorid = friend_angkorId AND ank_myfriends.friends_angkorid = #{angkorId}) > 0, 'Y', 'N') = 'Y' THEN ank_user.icon
+				   ELSE NULL
+			   END AS friend_url
+			 , ank_user.privacy_profile as friend_privacyProfile
+			 , if((select count(friends_phonenumber) from ank_myfriends
+				   left join ank_user on ank_user.phone = ank_myfriends.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+				   where ank_myfriends.angkorid = #{angkorId} and ank_myfriends.friends_angkorid = friend_angkorId)> 0, 'Y', 'N') as friend_yn
+			 , if((select count(friends_phonenumber) from ank_myfavorite
+				   left join ank_user on ank_user.phone = ank_myfavorite.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+				   where ank_myfavorite.angkorid = #{angkorId} and ank_myfavorite.friends_angkorid = friend_angkorId)> 0, 'Y', 'N') as friend_favorite_yn
+			 , if((select count(friends_angkorid) from ank_sys_blockusers
+				   left join ank_user on ank_user.angkorid = ank_sys_blockusers.friends_angkorid
+				   where ank_sys_blockusers.angkorid = #{angkorId} and ank_sys_blockusers.friends_angkorid = friend_angkorId)> 0, 'Y', 'N') as friend_block_yn
+		FROM ank_user
+		WHERE phonenumber = #{phoneNumber}
+		  AND del_yn = 0
+		  AND status = 1
+	</select>
+
+	<select id="getMyFriendList" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getMyFriendList */
+		select
+		    	ank_myfriends.friends_angkorid as friend_angkorId
+		  from  ank_myfriends
+	 left join ank_user on ank_user.angkorid = ank_myfriends.friends_angkorId and ank_user.del_yn = 0
+		 where ank_myfriends.angkorid = #{angkorId}
+	  order by ank_myfriends.friends_name asc
+	</select>
+
+	<select id="getBlockFriendList" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getBlockFriendList */
+	   select ank_user.angkorid as friend_angkorId
+	 	 from ank_sys_blockusers
+    left join ank_user on ank_user.angkorid = ank_sys_blockusers.friends_angkorid
+		where ank_sys_blockusers.angkorid = #{angkorId}
+	</select>
+
+	<select id="getAddedMeFriendList" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getAddedMeFriendList */
+		 select
+			    ank_myfriends.angkorid as friend_angkorId
+			  , ank_user.phonenumber as friend_phonenumber
+			  , ank_user.greeting_text as friend_profileMessage
+			  , ank_user.name as friend_name
+			  , ank_user.icon as friend_url
+			  , if(ank_user.privacy_profile > 0, 'Y', 'N') as friend_privacyProfile
+		   from ank_myfriends
+	  left join ank_user on ank_user.angkorid = ank_myfriends.angkorid and ank_user.del_yn = 0
+	  left join ank_sys_friends on ank_myfriends.angkorid  = ank_sys_friends.angkorid
+		  where ank_myfriends.friends_angkorid = #{angkorId}
+			and ank_sys_friends.in_recommend_friends = 1
+	   order by ank_myfriends.friends_name asc
+	</select>
+
+	<select id="getBlockAddressList" parameterType="HashMap" resultType="HashMap">
+		/* AddressMapper.getBlockAddressList */
+		select
+			ank_sys_blockusers.friends_angkorId as friend_angkorId
+			 , ank_user.phonenumber as friend_phonenumber
+			 , ank_user.greeting_text as friend_profileMessage
+			 , ank_user.name as friend_name
+			 , CASE
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = friend_angkorId) = 1 THEN ank_user.icon
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = friend_angkorId) = 2
+					   AND
+						IF((SELECT COUNT(friends_phonenumber) FROM ank_myfriends
+						    LEFT JOIN ank_user ON ank_user.phone = ank_myfriends.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+							WHERE ank_myfriends.angkorid = friend_angkorId AND ank_myfriends.friends_angkorid = #{angkorId}) > 0, 'Y', 'N') = 'Y' THEN ank_user.icon
+				   ELSE NULL
+			   END AS friend_url
+			 , if(ank_user.privacy_profile > 0, 'Y', 'N') as friend_privacyProfile
+		from ank_sys_blockusers
+	 left join ank_user on ank_user.angkorid = ank_sys_blockusers.friends_angkorId and ank_user.del_yn = 0
+		where ank_sys_blockusers.angkorid = #{angkorId}
+		order by ank_sys_blockusers.update_dt desc
+	</select>
+
+	<select id="checkUserAddressList" parameterType="HashMap" resultType="java.lang.String">
+		/* AddressMapper.checkUserAddressList */
+		select
+			   phone as friend_phonenumber
+		  from ank_user
+		 where del_yn = 0 and status = 1
+		   and angkorid != #{angkorId}
+		   and phone in
+		<foreach collection="friendList" item="phone"  open="(" close=")" separator=",">
+			#{phone}
+		</foreach>
+	</select>
+
+	<select id="getFriendYnByUserId" parameterType="map" resultType="HashMap">
+		/* AddressMapper.getFriendYnByUserId */
+		select
+			ank_user.angkorid as friend_angkorId
+			 , if((
+				     select count(ank_myfriends.friends_name) from ank_myfriends
+					 left join ank_user on ank_myfriends.friends_phonenumber = ank_user.phone
+				     where ank_myfriends.angkorid = #{params.angkorId}
+				     and ank_myfriends.friends_angkorid = ank_user.angkorid
+				     and ank_user.userid = #{friendUserId}
+				  ) > 0,
+				  (
+				     select ank_myfriends.friends_name from ank_myfriends
+					 left join ank_user on ank_myfriends.friends_phonenumber = ank_user.phone
+				     where ank_myfriends.angkorid = #{params.angkorId}
+					 and ank_myfriends.friends_angkorid = ank_user.angkorid
+					 and ank_user.userid = #{friendUserId}
+				  ), ank_user.name) AS friend_name
+			 , ank_user.greeting_text as friend_profileMessage
+			 , CASE
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = friend_angkorId) = 1 THEN ank_user.icon
+				   WHEN (select in_photo_range from ank_sys_security where angkorid = friend_angkorId) = 2
+					   AND
+						IF((SELECT COUNT(friends_phonenumber) FROM ank_myfriends
+						    LEFT JOIN ank_user ON ank_user.phone = ank_myfriends.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+							WHERE ank_myfriends.angkorid = friend_angkorId AND ank_myfriends.friends_angkorid = #{params.angkorId}) > 0, 'Y', 'N') = 'Y' THEN ank_user.icon
+				   ELSE NULL
+				END AS friend_url
+			 , ank_user.privacy_profile as friend_privacyProfile
+			 , if((select count(friends_phonenumber) from ank_myfriends
+				   left join ank_user on ank_user.phone = ank_myfriends.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+				   where ank_myfriends.angkorid = #{params.angkorId} and ank_myfriends.friends_angkorid = friend_angkorId)> 0, 'Y', 'N') as friend_yn
+			 , if((select count(friends_phonenumber) from ank_myfavorite
+				   left join ank_user on ank_user.phone = ank_myfavorite.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+				   where ank_myfavorite.angkorid = #{params.angkorId} and ank_myfavorite.friends_angkorid = friend_angkorId)> 0, 'Y', 'N') as friend_favorite_yn
+			 , if((select count(friends_angkorid) from ank_sys_blockusers
+				   left join ank_user on ank_user.angkorid = ank_sys_blockusers.friends_angkorid
+				   where ank_sys_blockusers.angkorid = #{params.angkorId} and ank_sys_blockusers.friends_angkorid = friend_angkorId)> 0, 'Y', 'N') as friend_block_yn
+		from ank_user
+		where userid = #{friendUserId} and del_yn = 0 and status = 1
+	</select>
+</mapper>

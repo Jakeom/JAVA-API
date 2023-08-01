@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.agree.AgreeMapper">
+
+	<select id="getAgreeList" parameterType="HashMap" resultType="HashMap">
+		/* AgreeMapper.getAgreeList */
+		select
+				  ank_agree_term.ord
+				, ank_group_code_child.child_code_name_en as language
+				, ank_agree_term.agree_term
+		        , ank_agree_term.agree_term_desc as agree_term_url
+				, ank_agree_term.agree_type
+		from ank_agree_term
+		LEFT JOIN ank_group_code on ank_group_code.group_code = 'G001'
+		LEFT JOIN ank_group_code_child on ank_group_code.group_code = ank_group_code_child.group_code and ank_agree_term.language_type = ank_group_code_child.child_code
+		where 1=1 and ank_agree_term.term_type = 'S' and ank_agree_term.del_yn = 0
+		<if test='language == "en"'>
+			and ank_agree_term.language_type = 'D001'
+		</if>
+		<if test='language == "khr"'>
+			and ank_agree_term.language_type = 'D002'
+		</if>
+	</select>
+</mapper>
+

@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.test.TestMapper">
+
+    <insert id="signUp" parameterType="HashMap">
+        /* UserMapper.signUp */
+        INSERT INTO ank_user (
+                 angkorid
+               , birthday_dt
+               , create_dt
+               , del_yn
+               , email
+                <if test='gender != null and gender != ""'>
+                   , gender
+                </if>
+               , greeting_text
+               , icon
+               , `language`
+               , lastaccess_dt
+               , `name`
+               , password
+               , phonecode
+               , phone
+               , phonenumber
+               , privacy_profile
+               , status
+               , uuid
+               , public_key
+               , userid /* userId 추가된 소스 */
+        ) VALUES (
+                   #{angkorId}
+                 , #{birthday}
+                 , NOW()
+                 , 0
+                 , #{email}
+                <if test='gender != null and gender != ""'>
+                    <if test='gender == "m"'>
+                        , 1
+                    </if>
+                    <if test='gender == "f"'>
+                        , 2
+                    </if>
+                    <if test='gender == "o"'>
+                        , 3
+                    </if>
+                </if>
+                 , #{profileMessage}
+                 , #{profileUrl}
+                 , #{language}
+                 , NOW()
+                 , #{userName}
+                 , #{password}
+                 , #{phoneCode}
+                 , #{oriPhone}
+                 , #{phone}
+                 , 0
+                 , 1
+                 , #{uuid}
+                 , #{publicKey}
+                 , #{userId}  /* userId 추가된 소스 */
+                 )
+    </insert>
+
+    <update id="deleteSamePhoneUser" parameterType="HashMap">
+        /* UserMapper.deleteSamePhoneUser */
+        <selectKey keyProperty="deleteAngkorId" keyColumn="angkorid" resultType="java.lang.String" order="BEFORE">
+            select IFNULL((select angkorid from ank_user
+            where phonenumber =  #{phone} and angkorid != #{angkorId} and del_yn = 0), 'N') AS deleteAngkorId
+        </selectKey>
+        update ank_user set
+               del_yn = 1
+         where angkorid = #{deleteAngkorId}
+    </update>
+
+    <delete id="deleteFavorite" parameterType="HashMap">
+        /* UserMapper.deleteFavorite */
+        delete from ank_myfavorite
+        where friends_angkorid = #{deleteAngkorId} or angkorid = #{deleteAngkorId}
+    </delete>
+
+    <delete id="deleteFriend" parameterType="HashMap">
+        /* UserMapper.deleteFriend */
+        delete from ank_myfriends
+        where friends_angkorid = #{deleteAngkorId} or angkorid = #{deleteAngkorId}
+    </delete>
+
+    <delete id="deleteBlock" parameterType="HashMap">
+        /* UserMapper.deleteBlock */
+        delete from ank_sys_blockusers
+        where friends_angkorid = #{deleteAngkorId} or angkorid = #{deleteAngkorId}
+    </delete>
+
+    <insert id="addUserIcon" parameterType="HashMap">
+        /* UserMapper.addUserIcon */
+        INSERT INTO ank_usericon (
+                   angkorid
+                 , create_dt
+                 , icon
+        ) VALUES (
+                   #{angkorId}
+                 , NOW()
+                 , #{profileUrl}
+        )
+    </insert>
+
+    <insert id="addUserAgree" parameterType="HashMap">
+        /* UserMapper.addUserAgree */
+        INSERT INTO ank_user_agreement (
+          guid
+        , angkorid
+        , term_ord
+        , agreement
+        , change_dt
+        ) VALUES (
+          #{guid}
+        , #{angkorId}
+        , #{termOrd}
+        , #{agreement}
+        , NOW()
+        )
+    </insert>
+
+    <insert id="addSysVersion" parameterType="HashMap">
+        /* UserMapper.addSysVersion */
+        INSERT INTO ank_sys_version (
+                   angkorid
+                 , os_info
+                 , version
+        ) VALUES (
+                   #{angkorId}
+                 , #{osType}
+                 , #{version}
+         )
+    </insert>
+
+    <insert id="addSysNoti" parameterType="HashMap">
+        /* UserMapper.addSysNoti */
+        INSERT INTO ank_sys_noti (
+             angkorid
+           , add_auto
+           , in_appsounds
+           , in_count_unread_message
+           , in_name_on_lock_screen
+           , in_new_contacts
+           , in_preview
+           , in_vibrate
+           , new_group
+        ) VALUES (
+              #{angkorId}
+             , 1
+             , 1
+             , 1
+             , 1
+             , 1
+             , 1
+             , 1
+             , 1
+         )
+    </insert>
+
+    <insert id="addSysSecurity" parameterType="HashMap">
+        /* UserMapper.addSysSecurity */
+        INSERT INTO ank_sys_security (
+                   angkorid
+                 , in_call_range
+                 , in_email_open
+                 , in_faceid
+                 , in_group_range
+                 , in_message_range
+                 , in_online_range
+                 , in_photo_range
+                 , in_twostep
+        ) VALUES (
+                  #{angkorId}
+                 , 2
+                 , 2
+                 , 1
+                 , 2
+                 , 2
+                 , 2
+                 , 2
+                 , 1
+                 )
+    </insert>
+
+    <insert id="addSysFriends" parameterType="HashMap">
+        /* UserMapper.addSysFriends */
+        INSERT INTO ank_sys_friends (
+                   angkorid
+                 , add_auto
+                 , in_allow_others
+                 , in_recommend_friends
+                 , in_refresh
+        ) VALUES (
+                   #{angkorId}
+                 , 1
+                 , 1
+                 , 1
+                 , 0
+         )
+    </insert>
+
+    <insert id="addSysChatting" parameterType="HashMap">
+        /* UserMapper.addSysChatting */
+        INSERT INTO ank_sys_chatting (
+                  angkorid
+                , in_chatbackop
+                , in_chatmbackop
+                , in_image_resolution
+                , in_sortrooms
+                , in_videos
+                , in_videos_convert
+        ) VALUES (
+                   #{angkorId}
+                 , 1
+                 , 1
+                 , 'D002'
+                 , 'D001'
+                 , 'D002'
+                 , 1
+                 )
+    </insert>
+
+    <insert id="addSysDisplay" parameterType="HashMap">
+        /* UserMapper.addSysDisplay */
+        INSERT INTO ank_sys_display (
+                   angkorid
+                 , in_chatbackground
+                 , in_fontsize
+                 , in_nightmode
+                 , in_themes
+        ) VALUES (
+                  #{angkorId}
+                 , 'D001'
+                 , 15
+                 , 0
+                 , 'D001'
+                 )
+    </insert>
+
+    <select id="getUser" parameterType="Hashmap" resultType="Hashmap">
+        /* UserMapper.getUser */
+        SELECT
+                  ank_user.angkorid as angkorId
+                , ank_user.userid as userId  /* userId 추가된 소스 */
+                , ank_user.email
+                , DATE_FORMAT(ank_user.birthday_dt, '%Y-%m-%d') AS birthday_dt
+                , ank_user.name as userName
+                , ank_user.gender
+                , ank_user.greeting_text as profileMessage
+                , ank_user.icon as profileUrl
+                , ank_user.phonecode
+                , ank_user.phonenumber
+                , ank_user.privacy_profile
+                , ank_user.show_profile
+                , ank_user.qrcode_url as qrcodeUrl
+                , ank_group_code_child.child_code_name_en as `language`
+        FROM ank_user
+        LEFT JOIN ank_group_code on ank_group_code.group_code = 'G001'
+        LEFT JOIN ank_group_code_child on ank_group_code.group_code = ank_group_code_child.group_code and ank_user.`language` = ank_group_code_child.child_code
+        WHERE 1=1
+        <if test='angkorId != null and angkorId != ""'>
+            AND angkorid = #{angkorId}
+        </if>
+        <if test='AngkorId != null and AngkorId != ""'>
+            AND angkorid = #{AngkorId}
+        </if>
+        AND del_yn = 0 AND status = 1
+    </select>
+
+    <select id="getUser2" parameterType="Hashmap" resultType="Hashmap">
+        /* LoginMapper.getUser2 */
+        SELECT
+            angkorid as angkorId
+             , userid as userId /* userId 추가된 소스 */
+             , email
+             , DATE_FORMAT(birthday_dt, '%Y-%m-%d') AS birthday_dt
+             , name as userName
+             , gender
+             , greeting_text as profileMessage
+             , icon as profileUrl
+             , phonecode
+             , phonenumber
+             , privacy_profile
+             , show_profile
+             , qrcode_url as qrcodeUrl
+        FROM ank_user
+        WHERE userid = #{userId} OR phoneNumber = #{userId}/* userId 추가된 소스 */
+          AND del_yn = 0
+          AND status = 1
+    </select>
+
+    <select id="getChatting" parameterType="Hashmap" resultType="Hashmap">
+        /* LoginMapper.getChatting */
+        SELECT
+            in_chatbackop AS inChatbackop,
+            in_chatmbackop AS inChatmbackop,
+            in_image_resolution AS inImageResolution,
+            in_sortrooms AS inSortrooms,
+            in_videos AS inVideos,
+            in_videos_convert AS inVideosConvert
+        FROM ank_sys_chatting
+        WHERE angkorid = #{angkorId}
+    </select>
+
+    <select id="getDisplay" parameterType="Hashmap" resultType="Hashmap">
+        /* LoginMapper.getDisplay */
+        SELECT
+            ank_group_code_child.child_code_name_en  AS inChatbackground,
+            ank_sys_display.in_fontsize AS inFontsize,
+            ank_sys_display.in_nightmode AS inNightmode,
+            ank_sys_display.in_themes AS inThemes,
+            DATE_FORMAT(ank_sys_display.update_dt, '%Y-%m-%d') AS updateDt
+        FROM ank_sys_display
+                 left join ank_group_code_child on ank_group_code_child.child_code = ank_sys_display.in_chatbackground
+            and ank_group_code_child.group_code = 'G008'
+        WHERE angkorid = #{angkorId}
+    </select>
+
+    <select id="getFriends" parameterType="Hashmap" resultType="Hashmap">
+        /* LoginMapper.getFriends */
+        SELECT
+            add_auto AS addAuto,
+            in_allow_others AS inAllowOthers,
+            in_recommend_friends AS inRecommendFriends
+        FROM ank_sys_friends
+        WHERE angkorid = #{angkorId}
+    </select>
+
+    <select id="getNoti" parameterType="Hashmap" resultType="Hashmap">
+        /* NotiMapper.getNoti */
+        SELECT
+            add_auto AS addAuto,
+            in_appsounds AS inAppsounds,
+            in_count_unread_message AS inCountUnreadMessage,
+            in_name_on_lock_screen AS inNameOnLockScreen,
+            in_new_contacts AS inNewContacts,
+            in_preview AS inPreview,
+            in_vibrate AS inVibrate,
+            new_group AS newGroup
+        FROM ank_sys_noti
+        WHERE angkorid = #{angkorId}
+    </select>
+
+    <select id="getPrivacy" parameterType="Hashmap" resultType="Hashmap">
+        /* NotiMapper.getPrivacy */
+        SELECT
+            in_call_range AS inCallrange,
+            in_email_open AS inEmailOpen,
+            in_faceid AS inFaceid,
+            in_group_range AS inGroupRange,
+            in_message_range AS inMessageRange,
+            in_online_range AS inOnlineRange,
+            in_photo_range AS inPhotoRange,
+            in_twostep AS inTwostep
+        FROM ank_sys_security
+        WHERE angkorid = #{angkorId}
+    </select>
+
+    <update id="updateLoginDtAndPublicKey" parameterType="HashMap">
+        /* NotiMapper.updateLoginDtAndPublicKey */
+        UPDATE ank_user
+        SET lastaccess_dt = NOW(),
+            public_key = #{publicKey}
+        where angkorid = #{angkorId}
+    </update>
+
+    <select id="getMyId" parameterType="Hashmap" resultType="Hashmap">
+        /* UserMapper.getMyId */
+        SELECT
+               phonecode as phoneCode
+             , phonenumber as phoneNumber
+             , status
+             , uuid
+        FROM ank_user
+        WHERE userid = #{userId}
+          AND del_yn = 0
+    </select>
+
+    <select id="getQuitUserList" parameterType="Hashmap" resultType="Hashmap">
+        /* UserMapper.getQuitUserList */
+        SELECT
+             angkorid as angkorId
+        FROM ank_user
+        WHERE del_yn = 1
+    </select>
+
+    <select id="getUserList" parameterType="Hashmap" resultType="Hashmap">
+        /* UserMapper.getUserList */
+        SELECT
+               ank_user.angkorid as angkorId
+             , ank_sys_security.in_online_range as inOnlineRange
+             , ank_sys_security.in_photo_range as inPhotoRange
+        FROM ank_user
+     left join ank_sys_security on ank_user.angkorid = ank_sys_security.angkorid
+        where ank_sys_security.angkorid is not null
+    </select>
+</mapper>
+

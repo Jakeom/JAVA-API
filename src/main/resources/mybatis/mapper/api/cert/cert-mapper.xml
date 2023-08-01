@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.cert.CertMapper">
+
+    <select id="getEmailHist" parameterType="Hashmap" resultType="Integer">
+        /* CertMapper.getEmailHist */
+        SELECT
+            count(angkorid)
+        FROM ank_user_emailconfirm
+        WHERE 1=1
+        <if test='email != null and email != ""'>
+            AND angkorid = #{email}
+        </if>
+        <if test='phoneNumber != null and phoneNumber != ""'>
+            AND angkorid = #{phoneNumber}
+        </if>
+         AND confirm_type = #{confirmType}
+    </select>
+
+    <insert id="insertEmailHist" parameterType="Hashmap">
+        /* CertMapper.insertEmailHist */
+        INSERT INTO ank_user_emailconfirm (
+                guid
+              , agreement
+              , angkorid
+              , confirm_type
+              , confirm_dt
+              , confirm_word
+              , create_dt
+              , try_cnt
+        ) VALUES (
+               #{guid}
+             , 2
+        <if test='email != null and email != ""'>
+             , #{email}
+        </if>
+        <if test='phoneNumber != null and phoneNumber != ""'>
+            , #{phoneNumber}
+        </if>
+             , #{confirmType}
+             , NULL
+             , #{comfirmWord}
+             , NOW()
+             , 0
+             )
+    </insert>
+
+    <update id="updateEmailHist" parameterType="Hashmap" >
+        /* CertMapper.updateEmailHist */
+        UPDATE ank_user_emailconfirm SET try_cnt = 0, create_dt = NOW(), confirm_dt = null, agreement = 2, confirm_word = #{comfirmWord}
+        WHERE 1=1
+        <if test='email != null and email != ""'>
+            AND angkorid = #{email}
+        </if>
+        <if test='phoneNumber != null and phoneNumber != ""'>
+            AND angkorid = #{phoneNumber}
+        </if>
+        AND confirm_type = #{confirmType}
+    </update>
+
+    <select id="checkIsUsePhoneNumber" parameterType="Hashmap" resultType="Integer">
+        /* CertMapper.checkIsUsePhoneNumber */
+        select
+            count(angkorId)
+        from ank_user
+        where phoneNumber = #{phoneNumber} and del_yn = 0 and status = 1
+    </select>
+
+    <update id="updateCntEmailHist" parameterType="Hashmap">
+        /* CertMapper.updateCntEmailHist */
+        UPDATE ank_user_emailconfirm SET try_cnt = (try_cnt + 1)
+        WHERE angkorid = #{angkorId} AND confirm_type = #{confirmType}
+        <selectKey keyProperty="tryCnt" resultType="integer" order="AFTER">
+            select try_cnt from ank_user_emailconfirm where angkorid = #{angkorId} AND confirm_type = #{confirmType}
+        </selectKey>
+    </update>
+
+    <update id="cleanCntEmailHist" parameterType="Hashmap" >
+        /* CertMapper.cleanCntEmailHist */
+        UPDATE ank_user_emailconfirm SET try_cnt = 0, confirm_dt = NOW(), agreement = 1
+        WHERE angkorid = #{angkorId} AND confirm_type = #{confirmType}
+    </update>
+
+    <select id="getUser" parameterType="Hashmap" resultType="Hashmap">
+        /* CertMapper.getUser */
+        SELECT
+               angkorid as angkorId
+             , userid as userId /* userId 추가된 소스 */
+             , email
+             , DATE_FORMAT(birthday_dt, '%Y-%m-%d') AS birthday_dt
+             , name as userName
+             , gender
+             , greeting_text as profileMessage
+             , icon as profileUrl
+             , phonecode
+             , phonenumber
+             , privacy_profile
+             , show_profile
+             , qrcode_url as qrcodeUrl
+        FROM ank_user
+        WHERE phonenumber = #{phoneNumber}
+          AND del_yn = 0
+          AND status = 1
+    </select>
+
+    <select id="getUserById" parameterType="Hashmap" resultType="Hashmap">
+        /* CertMapper.getUserById */
+        SELECT
+            angkorid as angkorId
+             , userid as userId /* userId 추가된 소스 */
+             , email
+             , DATE_FORMAT(birthday_dt, '%Y-%m-%d') AS birthday_dt
+             , name as userName
+             , gender
+             , greeting_text as profileMessage
+             , icon as profileUrl
+             , phonecode
+             , phonenumber
+             , privacy_profile
+             , show_profile
+             , qrcode_url as qrcodeUrl
+        FROM ank_user
+        WHERE userid = #{userId}
+          AND del_yn = 0
+          AND status = 1
+    </select>
+
+    <update id="updateLoginDt" parameterType="HashMap">
+        /* CertMapper.updateLoginDt */
+        UPDATE ank_user
+        SET lastaccess_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <update id="updateLoginDtAndPublicKey" parameterType="HashMap">
+        /* CertMapper.updateLoginDtAndPublicKey */
+        UPDATE ank_user
+        SET lastaccess_dt = NOW(),
+            public_key = #{publicKey}
+        where angkorid = #{angkorId}
+    </update>
+
+    <select id="chkEmailTimeOver" parameterType="Hashmap" resultType="Integer">
+        /* CertMapper.chkEmailTimeOver */
+        select
+               count(guid)
+          from ank_user_emailconfirm
+         where angkorid = #{email}
+           and confirm_type = 1 and agreement = 2
+           and create_dt BETWEEN DATE_SUB(NOW(), interval 3 MINUTE) AND NOW()
+    </select>
+
+    <select id="chkEmail24Hours" parameterType="Hashmap" resultType="Integer">
+        /* CertMapper.chkEmail24Hours */
+        <![CDATA[
+        select
+            count(guid)
+        from ank_user_emailconfirm
+        where angkorid = #{email}
+          and confirm_type = 1 and agreement = 2 and try_cnt > 9
+          and NOW() < DATE_ADD(create_dt, interval 1 DAY)
+        ]]>
+    </select>
+
+    <select id="chkSmsTenOver" parameterType="Hashmap" resultType="Integer">
+        /* CertMapper.chkSmsTenOver */
+        select try_cnt from ank_user_emailconfirm
+        where angkorid = #{phoneNumber} and confirm_type = 2
+    </select>
+
+    <select id="checkMyAngKorId" parameterType="HashMap" resultType="Integer">
+        /* CertMapper.checkMyAngKorId */
+        select
+            count(angkorid)
+        from ank_user
+        where angkorid = #{angkorId}
+    </select>
+
+    <select id="isValidUuid" parameterType="Hashmap" resultType="Integer">
+        /* UserMapper.isValidUuid */
+        select
+            count(angkorid)
+        from ank_user
+        where uuid = #{uuid}
+          and angkorid = #{angkorId}
+          and del_yn = 0 and status = 1
+    </select>
+
+    <update id="updateUuid" parameterType="HashMap">
+        /* CertMapper.updateUuid */
+        UPDATE ank_user
+        SET update_dt = NOW(), uuid = #{uuid}
+        where angkorid = #{angkorId}
+    </update>
+
+    <update id="updateMyEmail" parameterType="HashMap">
+        /* CertMapper.updateMyEmail */
+        update ank_user
+           set update_dt = NOW(), email = #{email}
+         where angkorid = #{angkorId}
+           and del_yn = 0 and status = 1
+    </update>
+
+    <update id="updatePhoneByUserId" parameterType="HashMap">
+        /* UserMapper.updatePhoneByUserId */
+        update ank_user set phonenumber = #{phoneNumber}, phonecode = #{phoneCode}, phone = #{oriPhone}
+        where userid = #{userId}
+    </update>
+
+</mapper>
+

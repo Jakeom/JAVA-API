@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.version.VersionMapper">
+
+    <select id="getVersion" parameterType="Hashmap" resultType="Hashmap">
+        /* VersionMapper.getVersion */
+        SELECT
+            angkorid AS angkorId,
+            os_info AS osInfo,
+            version AS currentVersion,
+            DATE_FORMAT(update_dt, '%Y-%m-%d') AS updatedt
+        FROM ank_sys_version
+        WHERE angkorid = #{angkorId}
+    </select>
+
+    <update id="updateVersion" parameterType="HashMap">
+        /* VersionMapper.updateVersion */
+        UPDATE ank_sys_version SET version = #{new_version}, update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+    <select id="getRecentAppVersion" parameterType="Hashmap" resultType="Hashmap">
+        /* VersionMapper.getRecentAppVersion */
+        SELECT
+               version AS app_version
+          FROM ank_version
+         WHERE os_info = #{osType}
+    </select>
+
+    <select id="checkAppUpdate" parameterType="Hashmap" resultType="java.lang.String">
+        /* VersionMapper.checkAppUpdate */
+        select version from ank_version
+        where os_info = #{osType}
+    </select>
+</mapper>
+

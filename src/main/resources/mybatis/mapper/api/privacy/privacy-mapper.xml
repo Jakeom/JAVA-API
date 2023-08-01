@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.privacy.PrivacyMapper">
+
+    <select id="getPrivacy" parameterType="Hashmap" resultType="Hashmap">
+        /* PrivacyMapper.getPrivacy */
+        SELECT
+            angkorid AS angkorId,
+            in_call_range AS inCallrange,
+            in_email_open AS inEmailOpen,
+            in_faceid AS inFaceid,
+            in_group_range AS inGroupRange,
+            in_message_range AS inMessageRange,
+            in_online_range AS inOnlineRange,
+            in_photo_range AS inPhotoRange,
+            in_twostep AS inTwostep,
+            DATE_FORMAT(update_dt, '%Y-%m-%d') AS updateDt
+        FROM ank_sys_security
+        WHERE angkorid = #{angkorId}
+    </select>
+
+    <update id="updatePrivacy" parameterType="HashMap">
+        /* PrivacyMapper.updatePrivacy */
+        UPDATE ank_sys_security
+        SET
+            in_online_range = #{inOnlineRange},
+            in_photo_range = #{inPhotoRange},
+            in_call_range = #{inCallRange},
+            in_group_range = #{inGroupRange},
+            update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+</mapper>
+

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout/login}">
+<head>
+    <title>AngkorChat - Personal</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            background-color: #f6f6f6;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding-top: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #4a4a4a;
+            padding: 20px 0;
+        }
+        h2 {
+            color: #333;
+            padding: 10px 0;
+        }
+        p {
+            color: #4a4a4a;
+            margin-bottom: 1em;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <th:block th:switch="${language}">
+            <th:block th:case="en">
+                <h2>At AngkorChat, we highly value your personal information and are committed to its protection.</h2>
+                <h2>We collect and use the following information for the sole purpose of resolving your inquiries effectively:</h2>
+                <p>User ID: To identify who is making the inquiry.</p>
+                <p>Contact Number: To reach out to you for any urgent matters or clarifications regarding your inquiry.</p>
+                <p>Email (optional): To follow up on your inquiry and provide updates or responses.</p>
+                <p>Inquiry: To understand your issue or question thoroughly and provide an accurate resolution.</p>
+                <p>Attached files: To provide additional context or proof to support your inquiry.</p>
+                <p>By submitting your inquiry, you agree to the collection and use of the above-mentioned personal information. We ensure that we will not disclose any of your personal information to third parties without your consent, except as required by applicable laws or regulations.</p>
+            </th:block>
+            <th:block th:case="khr">
+                <h2>នៅក្នុងកម្មវិធី AngkorChat យើងវាយតម្លៃខ្ពស់ចំពោះព័ត៌មានផ្ទាល់ខ្លួនរបស់អ្នក ហើយប្តេជ្ញាចំពោះ ការ ការពារយ៉ាងមោះមុត។ យើងប្រមូល និងប្រើប្រាស់ព័ត៌មានខាងក្រោមសម្រាប់គោលបំណងតែ មួយគត់ក្នុងការដោះស្រាយការសាកសួររបស់អ្នកប្រកបដោយប្រសិទ្ធភាព៖</h2>
+                <p>លេខសម្គាល់អ្នកប្រើប្រាស់ៈ ដើម្បីកំណត់អត្តសញ្ញាណអ្នកដែលកំពុងធ្វើការសាកសួរ។</p>
+                <p>លេខទំនាក់ទំនងៈ ដើម្បីធ្វើការទំនាក់ទំនងទៅកាន់អ្នក សម្រាប់ពេលមានបញ្ហាបន្ទាន់ណាមួយ ឬត្រូវការបំភ្លឺទាក់ទងនឹងការសាកសួររបស់អ្នក។</p>
+                <p>អ៊ីមែល (ជាជម្រើស): ដើម្បីតាមដានការសាកសួររបស់អ្នក និងផ្តល់ព័ត៌មានថ្មីៗ ឬការឆ្លើយតប។</p>
+                <p>ការសាកសួរៈ ដើម្បីយល់ដឹងពីបញ្ហា ឬសំណួររបស់អ្នកឱ្យបានហ្មត់ចត់ច្បាស់លាស់ និងផ្តល់ជូន នូវដំណោះស្រាយមួយដ៏ត្រឹមត្រូវ។</p>
+                <p>ឯកសារដែលភ្ជាប់មកជាមួយៈ ដើម្បីផ្តល់បរិបទ ឬភស្តុតាងបន្ថែមដើម្បីជាជំនួយគាំទ្រដល់ការ សាកសួររបស់អ្នក។</p>
+                <p>តាមរយៈការដាក់ស្នើសុំនៃការសាកសួររបស់អ្នក អ្នកយល់ព្រមចំពោះការប្រមូល និងប្រើប្រាស់ ព័ត៌មានផ្ទាល់ខ្លួនដែលបានរៀបរាប់ខាងលើ។ យើងធានាបានថា យើងនឹងមិនបង្ហាញព័ត៌មានផ្ទាល់ ខ្លួនរបស់អ្នក ដល់ភាគីទីបីដោយគ្មានការយល់ព្រមពីអ្នកនោះទេលើកលែងតែមានការតម្រូវដោយ ច្បាប់ ឬបទប្បញ្ញត្តិជាធរមាន។</p>
+            </th:block>
+        </th:block>
+    </div>
+</body>
+</html>

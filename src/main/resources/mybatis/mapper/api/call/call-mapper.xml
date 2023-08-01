@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.call.CallMapper">
+
+	<select id="checkMyAngKorId" parameterType="HashMap" resultType="Integer">
+		/* CallMapper.checkMyAngKorId */
+		select
+			 count(angkorId)
+		from ank_user
+		where angkorid = #{angkorId} and del_yn = 0 and status = 1
+	</select>
+
+	<select id="getFriendInfo" parameterType="HashMap" resultType="HashMap">
+		/* CallMapper.getFriendInfo */
+		select
+			   ank_sys_security.in_call_range as friend_calls
+			 , if((select count(friends_phonenumber) from ank_myfriends
+				   left join ank_user on ank_user.phone = ank_myfriends.friends_phonenumber and ank_user.del_yn = 0 and ank_user.status = 1
+				   where ank_myfriends.angkorid = #{friendAngkorId} and ank_myfriends.friends_angkorid = #{angkorId})> 0, 'Y', 'N') as friend_yn
+			 , if((select count(friends_angkorid) from ank_sys_blockusers
+				   left join ank_user on ank_user.angkorid = ank_sys_blockusers.friends_angkorid
+				   where ank_sys_blockusers.angkorid = #{friendAngkorId} and ank_sys_blockusers.friends_angkorid = #{angkorId})> 0, 'Y', 'N') as friend_block_yn
+		 from ank_user
+    left join ank_sys_security on ank_user.angkorid = ank_sys_security.angkorid
+		where ank_user.angkorid = #{friendAngkorId}
+	</select>
+
+	<insert id="insertBlockCallLog" parameterType="HashMap">
+		/* CallMapper.insertBlockCallLog */
+		INSERT INTO ank_user_call_block (angkorid,call_id) VALUES (#{angkorId},#{callId})
+	</insert>
+
+	<select id="getCallLog"  parameterType="HashMap" resultType="HashMap">
+		/* CallMapper.getCallLog */
+		SELECT a.call_log
+		,CASE WHEN IFNULL(b.del_yn,1) = 1 THEN 1 WHEN IFNULL(c.del_yn,1) THEN 1 ELSE 0 END  AS callee_del_yn 
+		FROM ank_user_call_log a 
+		LEFT JOIN ank_user b ON a.callee_id = b.angkorid
+		LEFT JOIN ank_user c ON a.caller_id = c.angkorid
+		WHERE (a.caller_id = #{angkorId} OR (a.callee_id = #{angkorId} AND a.callee_block_yn = 'N'))
+		AND a.call_id NOT IN (SELECT call_id FROM ank_user_call_block WHERE angkorid = #{angkorId})
+		<if test="createdAt != null and createdAt != ''">
+			AND #{createdAt} > created_at 
+		</if>
+		ORDER BY created_at DESC
+		LIMIT 0,50
+	</select>
+	
+	<select id="checkCallBlock" parameterType="HashMap" resultType="int">
+		SELECT COUNT(*) FROM ank_sys_blockusers WHERE angkorid = #{callee_id} AND friends_angkorid = #{caller_id}
+	</select>
+	
+
+	<insert id="insertCallLog" parameterType="HashMap">
+		/* CallMapper.insertCallLog */
+		INSERT INTO ank_user_call_log (call_id,caller_id,callee_id,callee_block_yn,call_log,created_at,started_at,ended_at) 
+		VALUES (#{call_id},#{caller_id},#{callee_id},#{callee_block_yn},#{call_log},#{created_at},#{started_at},#{ended_at})
+		on duplicate key UPDATE
+		caller_id = #{caller_id}
+		,callee_id = #{callee_id}
+		,call_log = #{call_log}
+		,created_at = #{started_at}
+		,started_at = #{started_at}
+		,ended_at = #{ended_at}
+	</insert>
+	
+	<insert id="insertCallLogExtra" parameterType="HashMap">
+		/* CallMapper.insertCallLogExtra */
+		INSERT INTO ank_user_call_log (call_id,caller_id,callee_id,callee_block_yn,call_log,created_at,started_at,ended_at) 
+		VALUES (#{call_id},#{callerId},#{calleeId},#{callee_block_yn}
+		,CONCAT('{"is_video_call":',true,',"custom_items":{},"call_id":"',#{call_id},'","duration":0,"end_result":"canceled","call_relay":"","started_at":',(UNIX_TIMESTAMP()*1000),',"ended_by":"',#{callerId},'","state":"ended","call_type":"direct","started_by":"',#{callerId},'","ended_at":',(UNIX_TIMESTAMP()*1000),',"participants":[{"nickname":"',#{callerNm},'","metadata":{"phoneCode":"","inPhotoRange":"","inOnlineRange":"","phoneNumber":""},"is_active":true,"role":"dc_caller","user_id":"',#{callerId},'","profile_url":"',#{callerPf},'"},{"nickname":"',#{calleeNm},'","metadata":{"phoneCode":"","inPhotoRange":"","inOnlineRange":"","phoneNumber":""},"is_active":false,"role":"dc_callee","user_id":"',#{calleeId},'","profile_url":"',#{calleePf},'"}]}')
+		,UNIX_TIMESTAMP()*1000,UNIX_TIMESTAMP()*1000,UNIX_TIMESTAMP()*1000)
+	</insert>
+	
+	
+</mapper>

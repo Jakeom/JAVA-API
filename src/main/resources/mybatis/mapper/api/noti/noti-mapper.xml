@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.softpuzzle.angkor.database.mapper.api.noti.NotiMapper">
+
+    <select id="getNoti" parameterType="Hashmap" resultType="Hashmap">
+        /* NotiMapper.getNoti */
+        SELECT
+            angkorid AS angkorId,
+            add_auto AS addAuto,
+            in_appsounds AS inAppsounds,
+            in_count_unread_message AS inCountUnreadMessage,
+            in_name_on_lock_screen AS inNameOnLockScreen,
+            in_new_contacts AS inNewContacts,
+            in_preview AS inPreview,
+            in_vibrate AS inVibrate,
+            new_group AS newGroup,
+            DATE_FORMAT(update_dt, '%Y-%m-%d') AS updateDt
+        FROM ank_sys_noti
+        WHERE angkorid = #{angkorId}
+    </select>
+
+    <update id="updateNoti" parameterType="HashMap">
+        /* NotiMapper.updateNoti */
+        UPDATE ank_sys_noti
+        SET
+            add_auto = #{isAddAuto},
+            in_appsounds = #{isInAppSound},
+            in_name_on_lock_screen = #{isNamesOnLock},
+            in_preview = #{isInAppPreview},
+            in_vibrate = #{isInAppVibrate},
+            new_group = #{isNewGroup},
+            update_dt = NOW()
+        where angkorid = #{angkorId}
+    </update>
+
+</mapper>
+
